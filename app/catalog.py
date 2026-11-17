@@ -1,9 +1,9 @@
-"""Hardware catalog: a non-exhaustive list of common devices, offered by "Demander une fiche".
+"""Hardware catalog: a non-exhaustive list of common hardware for new stock items.
 
-Each entry opens the GitHub request form (.github/ISSUE_TEMPLATE/fiche.yml) with
-its fields already filled in, through query parameters named after the form's
-field ids. The catalog holds no sheet: sheets are written as requests come in,
-under the entry's id (sheets/<id>.md), and the entry then links to its sheet.
+The "Nom" field of a new item offers these names; picking one fills in the
+other fields (category, value, package, reference, linked sheet). An entry's id
+is also the id of its sheet when one exists (sheets/<id>.md): the item is then
+linked to it.
 """
 
 from __future__ import annotations
@@ -17,33 +17,22 @@ import yaml
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 URL_RE = re.compile(r"^https?://\S+$")
-REQUEST_TEMPLATE = "fiche.yml"
 CORRECTION_TEMPLATE = "correction-fiche.yml"
 
 
-def request_url(repository: str, device: dict[str, Any] | None = None) -> str:
-    """Link to the sheet request form, pre-filled with a catalog entry when given."""
-    params: dict[str, str] = {"template": REQUEST_TEMPLATE, "title": "Fiche : "}
-    if device:
-        params.update({
-            "title": f"Fiche : {device['name']}",
-            "device": device["name"],
-            "part_number": " ".join(p for p in (device["manufacturer"], device["part_number"]) if p),
-            "category": device["category"],
-            "links": "\n".join(device["links"]),
-            "dimensions": device["dimensions"],
-        })
-    return f"{repository}/issues/new?{urlencode({k: v for k, v in params.items() if v}, quote_via=quote)}"
-
-
 def correction_url(repository: str, sheet_id: str, sheet_name: str) -> str:
-    """Link to the form that reports an error in an existing sheet."""
+    """Link to the GitHub form that reports an error in an existing sheet, pre-filled."""
     params = {"template": CORRECTION_TEMPLATE, "title": f"Correction : {sheet_name}", "sheet": sheet_id}
     return f"{repository}/issues/new?{urlencode(params, quote_via=quote)}"
 
 
 def _text(value: Any) -> str:
     return "" if value is None else str(value).strip()
+
+
+def _texts(value: Any) -> list[str]:
+    items = value if isinstance(value, list) else ([value] if value else [])
+    return [_text(item) for item in items if _text(item)]
 
 
 def normalize(raw: Any) -> tuple[list[dict[str, Any]], list[str]]:
@@ -55,8 +44,7 @@ def normalize(raw: Any) -> tuple[list[dict[str, Any]], list[str]]:
             problems.append(f"devices[{i}]: not a mapping")
             continue
         device_id, name, category = _text(entry.get("id")), _text(entry.get("name")), _text(entry.get("category"))
-        links = entry.get("links") or []
-        links = [_text(link) for link in (links if isinstance(links, list) else [links])]
+        links = _texts(entry.get("links"))
         if not ID_RE.fullmatch(device_id) or device_id in seen:
             problems.append(f"devices[{i}]: missing, invalid or duplicate id '{device_id}'")
             continue
@@ -73,6 +61,9 @@ def normalize(raw: Any) -> tuple[list[dict[str, Any]], list[str]]:
             "category": category,
             "manufacturer": _text(entry.get("manufacturer")),
             "part_number": _text(entry.get("part_number")),
+            "package": _text(entry.get("package")),
+            "value": _text(entry.get("value")),
+            "values": _texts(entry.get("values")),  # suggestions for the value field
             "description": _text(entry.get("description")),
             "dimensions": _text(entry.get("dimensions")),
             "links": links,

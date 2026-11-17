@@ -9,9 +9,6 @@ body:
         La fiche sera ajoutée dans une prochaine mise à jour de Prométhée, avec son brochage,
         un mode d'emploi et un modèle 3D de l'appareil, réalisé d'après sa fiche technique et vos
         photos : pas besoin d'en fournir un. Plus les informations sont précises, plus vite elle arrive.
-
-        Depuis Prométhée, la page « Demander une fiche » propose une liste de matériel courant :
-        choisir un appareil y remplit déjà ce formulaire.
   - type: input
     id: device
     attributes:

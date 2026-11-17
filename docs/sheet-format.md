@@ -147,27 +147,34 @@ Pour ajouter un modèle KiCad : ajouter son fichier STEP dans `tools/parts.yaml`
 `python tools/build_models.py`. Un modèle STEP de fabricant peut aussi y être ajouté si sa
 licence permet de le redistribuer.
 
-## Liste de matériel (demandes)
+## Liste de matériel (nouveaux articles)
 
-`sheets/catalog.yaml` liste du matériel courant, sans fiche : la page **Demander une fiche**
-l'affiche, et chaque appareil ouvre le formulaire GitHub `fiche.yml` déjà rempli (les paramètres
-de l'adresse portent les identifiants des champs du formulaire).
+`sheets/catalog.yaml` liste du matériel courant, avec ou sans fiche : le champ **Nom** d'un
+nouvel article la propose, et choisir un appareil remplit les autres champs de l'article.
+Seuls `id`, `name` et `category` sont obligatoires.
 
 ```yaml
 devices:
-  - id: arduino-uno-r3            # identifiant de la future fiche : sheets/arduino-uno-r3.md
-    name: Arduino Uno R3
-    category: Carte de développement
-    manufacturer: Arduino
-    part_number: A000066
-    description: Carte ATmega328P en 5 V, la référence pour débuter.
-    dimensions: 68,6 × 53,4 mm     # facultatif
-    links: [https://docs.arduino.cc/hardware/uno-rev3/]
+  - id: l7805                     # unique ; c'est aussi l'identifiant de sa fiche (sheets/l7805.md)
+    name: Régulateur L7805        # nom proposé, et nom de l'article
+    category: Alimentation
+    manufacturer: STMicroelectronics
+    part_number: L7805CV          # avec le fabricant : « Réf. : … » dans les notes de l'article
+    package: TO-220               # boîtier
+    value: 5 V                    # valeur
+    description: Régulateur linéaire 5 V, 1,5 A, en TO-220.   # cherchée en dernier recours
+    links: [https://www.st.com/resource/en/datasheet/l78.pdf] # fiche technique
+  - id: resistor-1-4w
+    name: Résistance 1/4 W
+    category: Résistance
+    package: THT 1/4 W
+    values: [10 Ω, 220 Ω, 1 kΩ, 10 kΩ]  # valeurs proposées dans le champ Valeur
 ```
 
-Quand une fiche porte le même identifiant qu'un appareil de la liste, la page affiche
-« Fiche disponible » et renvoie vers elle. Les liens de la liste et des fiches sont vérifiés par
-`python tools/check_links.py` (workflow **Links**, chaque semaine et à chaque modification).
+Quand une fiche porte l'identifiant d'un appareil de la liste, l'article est lié à cette fiche :
+chaque fiche livrée a donc son entrée dans la liste (les tests le vérifient). Les liens de la liste
+et des fiches sont vérifiés par `python tools/check_links.py` (workflow **Links**, chaque semaine
+et à chaque modification).
 
 ## Pièges du YAML
 

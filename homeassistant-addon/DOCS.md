@@ -13,12 +13,16 @@ connectés à Home Assistant y ont accès.
 ## Fiches techniques
 
 Les fiches (brochage, vue 3D, mode d'emploi) sont livrées avec le module et arrivent avec ses
-mises à jour. Pour en demander une : bouton **Demander une fiche** dans Prométhée, qui propose
-une liste de matériel courant et ouvre le formulaire GitHub déjà rempli, ou
-[ce formulaire](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml).
-Une erreur dans une fiche se signale avec **Signaler une erreur**, sur la fiche.
+mises à jour. Pour en demander une : bouton **Demander une fiche** dans Prométhée, qui ouvre
+[le formulaire de demande](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml)
+sur GitHub. Une erreur dans une fiche se signale avec **Signaler une erreur**, sur la fiche.
 
-Le stock, lui, est enregistré dans le module et inclus dans les sauvegardes de Home Assistant.
+## Stock
+
+Pour un nouvel article, le champ **Nom** propose une liste de matériel courant : choisir un nom
+remplit la catégorie, la valeur, le boîtier, la référence et la fiche liée.
+
+Le stock est enregistré dans le module et inclus dans les sauvegardes de Home Assistant.
 
 ## Capteurs
 

@@ -15,7 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__, config
-from .catalog import Catalog, correction_url, request_url
+from .catalog import Catalog, correction_url
 from .home_assistant import Publisher, sensor_states
 from .inventory import Inventory, InventoryError
 from .sheets import SheetError, SheetLibrary, check_id
@@ -120,17 +120,10 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
 
     @app.get("/api/catalog")
     def hardware_catalog() -> dict[str, Any]:
-        """Common hardware offered by "Demander une fiche", with pre-filled request links."""
+        """Common hardware offered by the name field of a new item, to fill in its other fields."""
         existing = {sheet.id for sheet in library.list()[0]}
-        devices = [
-            {**device, "has_sheet": device["id"] in existing, "request_url": request_url(config.REPOSITORY_URL, device)}
-            for device in catalog.devices()
-        ]
-        return {
-            "devices": devices,
-            "categories": list(dict.fromkeys(device["category"] for device in devices)),
-            "other_request_url": request_url(config.REPOSITORY_URL),
-        }
+        devices = [{**device, "has_sheet": device["id"] in existing} for device in catalog.devices()]
+        return {"devices": devices, "categories": list(dict.fromkeys(d["category"] for d in devices))}
 
     @app.api_route("/api/models/{name:path}", methods=["GET", "HEAD"])
     def get_model(name: str) -> FileResponse:

@@ -14,6 +14,7 @@ import concurrent.futures
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -51,6 +52,9 @@ def check(url: str) -> tuple[bool, str]:
             response.read(1024)  # enough to know the document is served
             kind = response.headers.get_content_type()
             moved = f" -> {response.geturl()}" if response.geturl() != url else ""
+            # A PDF link that lands on a web page is a "soft 404": a search or "not found" page.
+            if urllib.parse.urlsplit(url).path.lower().endswith(".pdf") and kind != "application/pdf":
+                return False, f"expected a PDF, got {kind}{moved}"
             return True, f"{response.status} {kind}{moved}"
     except urllib.error.HTTPError as exc:
         return False, f"HTTP {exc.code}"

@@ -2,7 +2,8 @@
 // Sheets are read-only: new sheets and corrections are requested as GitHub issues.
 // Code is in English; every text shown to the user is in French.
 
-import { api, escapeHtml as h, notify, debounce, formatDate, pinType } from "./common.js";
+import { api, escapeHtml as h, notify, debounce, formatDate, pinType, SHEET_REQUEST_URL } from "./common.js";
+import { attachCombobox, fold } from "./combobox.js";
 import { pinPositions } from "./geometry.js";
 import { createPinoutDiagram } from "./pinout.js";
 
@@ -25,20 +26,27 @@ async function mountViewer(container, sheet, options) {
 
 const fetchSheets = async () => (await api("/sheets")).sheets;
 
+// Common hardware offered by the name of a new item (sheets/catalog.yaml): it only changes
+// with an update, so it is fetched once.
+let catalogRequest = null;
+function fetchCatalog() {
+  catalogRequest ??= api("/catalog").catch((err) => { catalogRequest = null; throw err; });
+  return catalogRequest;
+}
+
 // ---------- Router ----------
 
 const routes = [
   [/^#\/stock$/, renderInventory],
   [/^#\/sheets$/, renderSheetList],
   [/^#\/sheet\/([a-z0-9-]+)$/, renderSheet],
-  [/^#\/requests$/, renderRequests],
 ];
 
 async function route() {
   const hash = location.hash || "#/stock";
   cleanup();
   for (const link of document.querySelectorAll("[data-nav]")) {
-    const isSheetPage = link.dataset.nav === "sheets" && /^#\/(sheet\/|requests)/.test(hash);
+    const isSheetPage = link.dataset.nav === "sheets" && hash.startsWith("#/sheet/");
     link.classList.toggle("active", hash.startsWith(`#/${link.dataset.nav}`) || isSheetPage);
   }
   for (const [pattern, render] of routes) {
@@ -196,38 +204,97 @@ function openDialog(html) {
 
 function openItemDialog(item, sheets, onSaved, defaults = {}) {
   const data = item || { quantity: 0, threshold: 0, ...defaults };
-  const field = (name, label, attrs = "", cls = "") =>
-    `<label class="field ${cls}"><span>${label}</span><input name="${name}" value="${h(data[name] ?? "")}" ${attrs}></label>`;
+  const field = (name, label, attrs = "", cls = "") => `<div class="field ${cls}"><label for="item-${name}">${label}</label>
+    <input id="item-${name}" name="${name}" value="${h(data[name] ?? "")}" ${attrs}></div>`;
   const dialog = openDialog(`<form method="dialog">
     <h2>${item ? "Modifier l'article" : "Nouvel article"}</h2>
     <div class="form-grid">
-      ${field("name", "Nom", 'required autofocus placeholder="Résistance, ESP32…"', "wide")}
-      ${field("category", "Catégorie", 'list="category-options" placeholder="Résistance, Capteur…"')}
+      ${field("name", "Nom", 'required autofocus placeholder="Choisir dans la liste ou saisir un nom"', "wide")}
+      ${field("category", "Catégorie", 'placeholder="Résistance, Capteur…"')}
       ${field("value", "Valeur", 'placeholder="10 kΩ, 100 nF…"')}
       ${field("package", "Boîtier", 'placeholder="0805, DIP-8, TO-92…"')}
       ${field("location", "Emplacement", 'placeholder="Tiroir A3"')}
       ${field("quantity", "Quantité", 'type="number" min="0" step="1" required')}
       ${field("threshold", "Seuil d'alerte", 'type="number" min="0" step="1"')}
-      <label class="field"><span>Fiche liée</span><select name="sheet"><option value="">Aucune</option>
-        ${sheets.map((s) => `<option value="${h(s.id)}" ${s.id === data.sheet ? "selected" : ""}>${h(s.name)}</option>`).join("")}</select></label>
+      <div class="field"><label for="item-sheet">Fiche liée</label><select id="item-sheet" name="sheet"><option value="">Aucune</option>
+        ${sheets.map((s) => `<option value="${h(s.id)}" ${s.id === data.sheet ? "selected" : ""}>${h(s.name)}</option>`).join("")}</select></div>
       ${field("supplier", "Fournisseur")}
       ${field("price", "Prix unitaire (€)", 'type="number" min="0" step="0.001"')}
-      <label class="field wide"><span>Notes</span><textarea name="notes" rows="3">${h(data.notes ?? "")}</textarea></label>
+      <div class="field wide"><label for="item-notes">Notes</label><textarea id="item-notes" name="notes" rows="3">${h(data.notes ?? "")}</textarea></div>
     </div>
-    <datalist id="category-options"></datalist>
     <div class="dialog-footer">
       ${item ? '<button class="btn btn-danger" type="button" data-action="delete">Supprimer</button>' : ""}
       <span class="spacer"></span>
-      <button class="btn" value="cancel" formnovalidate>Annuler</button>
+      <button class="btn" type="button" data-action="cancel">Annuler</button>
       <button class="btn btn-primary" value="save" type="submit">Enregistrer</button>
     </div></form>`);
 
-  api("/categories").then((c) => {
-    const all = [...new Set([...c.items, ...c.sheets])].sort((a, b) => a.localeCompare(b, "fr"));
-    dialog.querySelector("#category-options").innerHTML = all.map((x) => `<option value="${h(x)}">`).join("");
+  const form = dialog.querySelector("form");
+  const input = (name) => form.elements.namedItem(name);
+
+  // Picking a name from the hardware list fills in the other fields, except those
+  // the user has typed in: a field is only changed while empty or still holding
+  // what the list put there.
+  const filled = {};
+  const fill = (name, value) => {
+    const el = input(name);
+    if (el.value !== "" && el.value !== filled[name]) return;
+    el.value = value ?? "";
+    filled[name] = el.value;
+  };
+  const valueBox = attachCombobox(input("value"), { label: "Valeurs courantes" });
+  const categoryBox = attachCombobox(input("category"), { label: "Catégories" });
+  const valueEntries = (device) => device.values.map((value) => ({ label: value }));
+
+  function applyDevice(device, { typed = false } = {}) {
+    fill("category", device.category);
+    fill("value", device.value);
+    fill("package", device.package);
+    fill("sheet", device.has_sheet ? device.id : "");
+    fill("notes", device.part_number ? `Réf. : ${[device.manufacturer, device.part_number].filter(Boolean).join(" ")}` : "");
+    valueBox.setEntries(valueEntries(device));
+    if (typed) return;
+    // Next field to fill in: the value when the list offers some, else the location.
+    if (device.values.length && !input("value").value) {
+      input("value").focus();
+      valueBox.open();
+    } else {
+      input("location").focus();
+    }
+  }
+  const nameBox = attachCombobox(input("name"), {
+    label: "Matériel courant",
+    openOnFocus: !item,
+    onSelect: (entry, options) => applyDevice(entry.data, options),
   });
 
-  const form = dialog.querySelector("form");
+  Promise.all([fetchCatalog(), api("/categories")]).then(([catalog, categories]) => {
+    const { devices } = catalog;
+    const order = new Map(catalog.categories.map((c, i) => [c, i]));
+    nameBox.setEntries([...devices].sort((a, b) => order.get(a.category) - order.get(b.category)).map((d) => ({
+      label: d.name,
+      group: d.category,
+      detail: [d.package, d.value || d.values.slice(0, 4).join(", ") + (d.values.length > 4 ? "…" : ""),
+        [d.manufacturer, d.part_number].filter(Boolean).join(" ")].filter(Boolean).join(" · "),
+      badge: d.has_sheet ? "Fiche" : "",
+      search: [d.part_number, d.manufacturer, d.category, d.package].join(" "),
+      extra: d.description,
+      data: d,
+    })));
+    const all = new Set([...categories.items, ...categories.sheets, ...catalog.categories]);
+    categoryBox.setEntries([...all].sort((a, b) => a.localeCompare(b, "fr")).map((c) => ({ label: c })));
+
+    const current = devices.find((d) => fold(d.name) === fold(input("name").value));
+    if (!item && defaults.sheet) {
+      // "Ajouter au stock" from a sheet: complete with the list entry of that device.
+      const device = devices.find((d) => d.id === defaults.sheet);
+      if (device) applyDevice(device, { typed: true });
+    } else if (current) {
+      valueBox.setEntries(valueEntries(current));
+    }
+    if (!item && !input("name").value && document.activeElement === input("name")) nameBox.open();
+  }).catch(() => { /* without the list, the fields stay free text */ });
+
   form.addEventListener("submit", async (e) => {
     if (e.submitter?.value !== "save") return;
     e.preventDefault();
@@ -244,6 +311,7 @@ function openItemDialog(item, sheets, onSaved, defaults = {}) {
     } catch (err) { notify(err.message, true); }
   });
 
+  dialog.querySelector("[data-action=cancel]").addEventListener("click", () => dialog.close());
   dialog.querySelector("[data-action=delete]")?.addEventListener("click", async () => {
     if (!confirm(`Supprimer « ${item.name} » et son historique ?`)) return;
     try {
@@ -279,7 +347,7 @@ async function renderSheetList() {
     <div class="page-title">
       <div><div class="eyebrow">Documentation</div><h1>Fiches techniques</h1>
       <p>Livrées avec les mises à jour. Un appareil manque ? Demandez sa fiche.</p></div>
-      <span class="spacer"></span><a class="btn btn-primary" href="#/requests">Demander une fiche</a>
+      <span class="spacer"></span><a class="btn btn-primary" href="${SHEET_REQUEST_URL}" target="_blank" rel="noopener">Demander une fiche ↗</a>
     </div>
     ${errors.length ? `<div class="sheet-errors"><h2>${errors.length} fiche(s) illisible(s)</h2><ul>
       ${errors.map((e) => `<li><code>${h(e.id)}.md</code> : ${h(e.error)}</li>`).join("")}</ul></div>` : ""}
@@ -310,62 +378,6 @@ async function renderSheetList() {
       : `<div class="empty" style="grid-column:1/-1"><b>Aucune fiche</b>${sheets.length
         ? "Aucune fiche ne correspond à la recherche."
         : "Demandez la première depuis « Demander une fiche »."}</div>`;
-  }
-  render();
-  view.querySelector("#search").addEventListener("input", (e) => { searchText = e.target.value; render(); });
-  view.querySelector("#filters").addEventListener("click", (e) => {
-    const button = e.target.closest("button");
-    if (!button) return;
-    categoryFilter = button.dataset.category;
-    view.querySelectorAll("#filters button").forEach((b) => b.classList.toggle("active", b === button));
-    render();
-  });
-}
-
-// ---------- Sheet requests ----------
-
-// Common hardware (sheets/catalog.yaml): each device opens the GitHub request form
-// already filled in. Sheets are written as requests come in.
-async function renderRequests() {
-  const { devices, categories, other_request_url: otherUrl } = await api("/catalog");
-  let categoryFilter = "";
-  let searchText = "";
-  view.innerHTML = `
-    <div class="page-title">
-      <div><div class="eyebrow">Fiches techniques</div><h1>Demander une fiche</h1>
-      <p>Choisissez un appareil : le formulaire de demande s'ouvre sur GitHub, déjà rempli (nom, référence,
-      catégorie, fiche technique, dimensions). La fiche arrive avec une prochaine mise à jour.</p></div>
-      <span class="spacer"></span>
-      <a class="btn" href="${h(otherUrl)}" target="_blank" rel="noopener">Autre appareil ↗</a>
-    </div>
-    <div class="toolbar">
-      <input class="search" type="search" placeholder="Rechercher : nom, référence, fabricant…" aria-label="Rechercher un appareil" id="search">
-      <div class="filters" id="filters">
-        <button class="btn active" data-category="" type="button">Tous</button>
-        ${categories.map((c) => `<button class="btn" data-category="${h(c)}" type="button">${h(c)}</button>`).join("")}
-      </div>
-    </div>
-    <div class="grid" id="catalog-grid"></div>`;
-
-  const grid = view.querySelector("#catalog-grid");
-  function render() {
-    const text = searchText.toLowerCase();
-    const visible = devices.filter((d) => (!categoryFilter || d.category === categoryFilter) &&
-      (!text || [d.name, d.manufacturer, d.part_number, d.description].join(" ").toLowerCase().includes(text)));
-    grid.innerHTML = visible.length ? visible.map((d) => `
-      <div class="sheet-card catalog-card">
-        <div class="eyebrow">${h(d.category)}</div>
-        <h3>${h(d.name)}</h3>
-        <p>${h(d.description)}</p>
-        <div class="muted">${h([d.manufacturer, d.part_number, d.dimensions].filter(Boolean).join(" · "))}</div>
-        <div class="footer">
-          ${d.has_sheet
-            ? `<span class="badge badge-accent">Fiche disponible</span><span class="spacer"></span><a class="btn" href="#/sheet/${h(d.id)}">Voir la fiche</a>`
-            : `<span class="spacer"></span><a class="btn btn-primary" href="${h(d.request_url)}" target="_blank" rel="noopener">Demander ↗</a>`}
-        </div>
-      </div>`).join("")
-      : `<div class="empty" style="grid-column:1/-1"><b>Aucun appareil ne correspond</b>
-        « Autre appareil » ouvre le formulaire de demande vide.</div>`;
   }
   render();
   view.querySelector("#search").addEventListener("input", (e) => { searchText = e.target.value; render(); });
