@@ -65,19 +65,6 @@ export function formatDate(iso) {
   return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 }
 
-const REPOSITORY_URL = "https://github.com/astraeos-dev/Promethee";
-
-// GitHub issue forms (.github/ISSUE_TEMPLATE) accept prefilled fields as query parameters.
-export function sheetRequestUrl(device = "") {
-  const params = new URLSearchParams({ template: "fiche.yml", title: `Fiche : ${device}`.trim() });
-  if (device) params.set("device", device);
-  return `${REPOSITORY_URL}/issues/new?${params}`;
-}
-
-export function sheetIssueUrl(sheet) {
-  const params = new URLSearchParams({ template: "correction-fiche.yml", title: `Correction : ${sheet.name}`, sheet: sheet.id });
-  return `${REPOSITORY_URL}/issues/new?${params}`;
-}
 
 export function isLightColor(hex) {
   const n = parseInt(hex.slice(1), 16);

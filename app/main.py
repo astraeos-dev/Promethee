@@ -15,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__, config
+from .catalog import Catalog, correction_url, request_url
 from .home_assistant import Publisher, sensor_states
 from .inventory import Inventory, InventoryError
 from .sheets import SheetError, SheetLibrary, check_id
@@ -49,6 +50,7 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
     sheets_dir = sheets_dir or config.SHEETS_DIR
     db_path = db_path or config.DB_PATH
     library = SheetLibrary(sheets_dir)
+    catalog = Catalog(sheets_dir / "catalog.yaml")
     inventory = Inventory(db_path)
 
     def ha_states() -> dict[str, dict]:
@@ -111,9 +113,24 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
     @app.get("/api/sheets/{sheet_id}")
     def get_sheet(sheet_id: str) -> dict[str, Any]:
         try:
-            return library.get(check_id(sheet_id)).full()
+            sheet = library.get(check_id(sheet_id))
         except FileNotFoundError:
             raise HTTPException(404, "Fiche introuvable.") from None
+        return {**sheet.full(), "correction_url": correction_url(config.REPOSITORY_URL, sheet.id, sheet.meta["name"])}
+
+    @app.get("/api/catalog")
+    def hardware_catalog() -> dict[str, Any]:
+        """Common hardware offered by "Demander une fiche", with pre-filled request links."""
+        existing = {sheet.id for sheet in library.list()[0]}
+        devices = [
+            {**device, "has_sheet": device["id"] in existing, "request_url": request_url(config.REPOSITORY_URL, device)}
+            for device in catalog.devices()
+        ]
+        return {
+            "devices": devices,
+            "categories": list(dict.fromkeys(device["category"] for device in devices)),
+            "other_request_url": request_url(config.REPOSITORY_URL),
+        }
 
     @app.api_route("/api/models/{name:path}", methods=["GET", "HEAD"])
     def get_model(name: str) -> FileResponse:

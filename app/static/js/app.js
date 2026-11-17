@@ -2,7 +2,7 @@
 // Sheets are read-only: new sheets and corrections are requested as GitHub issues.
 // Code is in English; every text shown to the user is in French.
 
-import { api, escapeHtml as h, notify, debounce, formatDate, pinType, sheetRequestUrl, sheetIssueUrl } from "./common.js";
+import { api, escapeHtml as h, notify, debounce, formatDate, pinType } from "./common.js";
 import { pinPositions } from "./geometry.js";
 import { createPinoutDiagram } from "./pinout.js";
 
@@ -31,13 +31,14 @@ const routes = [
   [/^#\/stock$/, renderInventory],
   [/^#\/sheets$/, renderSheetList],
   [/^#\/sheet\/([a-z0-9-]+)$/, renderSheet],
+  [/^#\/requests$/, renderRequests],
 ];
 
 async function route() {
   const hash = location.hash || "#/stock";
   cleanup();
   for (const link of document.querySelectorAll("[data-nav]")) {
-    const isSheetPage = link.dataset.nav === "sheets" && hash.startsWith("#/sheet/");
+    const isSheetPage = link.dataset.nav === "sheets" && /^#\/(sheet\/|requests)/.test(hash);
     link.classList.toggle("active", hash.startsWith(`#/${link.dataset.nav}`) || isSheetPage);
   }
   for (const [pattern, render] of routes) {
@@ -277,8 +278,8 @@ async function renderSheetList() {
   view.innerHTML = `
     <div class="page-title">
       <div><div class="eyebrow">Documentation</div><h1>Fiches techniques</h1>
-      <p>Livrées avec les mises à jour. Un appareil manque ? Demandez sa fiche sur GitHub.</p></div>
-      <span class="spacer"></span><a class="btn btn-primary" href="${sheetRequestUrl()}" target="_blank" rel="noopener">Demander une fiche ↗</a>
+      <p>Livrées avec les mises à jour. Un appareil manque ? Demandez sa fiche.</p></div>
+      <span class="spacer"></span><a class="btn btn-primary" href="#/requests">Demander une fiche</a>
     </div>
     ${errors.length ? `<div class="sheet-errors"><h2>${errors.length} fiche(s) illisible(s)</h2><ul>
       ${errors.map((e) => `<li><code>${h(e.id)}.md</code> : ${h(e.error)}</li>`).join("")}</ul></div>` : ""}
@@ -308,7 +309,63 @@ async function renderSheetList() {
       </a>`).join("")
       : `<div class="empty" style="grid-column:1/-1"><b>Aucune fiche</b>${sheets.length
         ? "Aucune fiche ne correspond à la recherche."
-        : "Demandez la première fiche sur GitHub."}</div>`;
+        : "Demandez la première depuis « Demander une fiche »."}</div>`;
+  }
+  render();
+  view.querySelector("#search").addEventListener("input", (e) => { searchText = e.target.value; render(); });
+  view.querySelector("#filters").addEventListener("click", (e) => {
+    const button = e.target.closest("button");
+    if (!button) return;
+    categoryFilter = button.dataset.category;
+    view.querySelectorAll("#filters button").forEach((b) => b.classList.toggle("active", b === button));
+    render();
+  });
+}
+
+// ---------- Sheet requests ----------
+
+// Common hardware (sheets/catalog.yaml): each device opens the GitHub request form
+// already filled in. Sheets are written as requests come in.
+async function renderRequests() {
+  const { devices, categories, other_request_url: otherUrl } = await api("/catalog");
+  let categoryFilter = "";
+  let searchText = "";
+  view.innerHTML = `
+    <div class="page-title">
+      <div><div class="eyebrow">Fiches techniques</div><h1>Demander une fiche</h1>
+      <p>Choisissez un appareil : le formulaire de demande s'ouvre sur GitHub, déjà rempli (nom, référence,
+      catégorie, fiche technique, dimensions). La fiche arrive avec une prochaine mise à jour.</p></div>
+      <span class="spacer"></span>
+      <a class="btn" href="${h(otherUrl)}" target="_blank" rel="noopener">Autre appareil ↗</a>
+    </div>
+    <div class="toolbar">
+      <input class="search" type="search" placeholder="Rechercher : nom, référence, fabricant…" aria-label="Rechercher un appareil" id="search">
+      <div class="filters" id="filters">
+        <button class="btn active" data-category="" type="button">Tous</button>
+        ${categories.map((c) => `<button class="btn" data-category="${h(c)}" type="button">${h(c)}</button>`).join("")}
+      </div>
+    </div>
+    <div class="grid" id="catalog-grid"></div>`;
+
+  const grid = view.querySelector("#catalog-grid");
+  function render() {
+    const text = searchText.toLowerCase();
+    const visible = devices.filter((d) => (!categoryFilter || d.category === categoryFilter) &&
+      (!text || [d.name, d.manufacturer, d.part_number, d.description].join(" ").toLowerCase().includes(text)));
+    grid.innerHTML = visible.length ? visible.map((d) => `
+      <div class="sheet-card catalog-card">
+        <div class="eyebrow">${h(d.category)}</div>
+        <h3>${h(d.name)}</h3>
+        <p>${h(d.description)}</p>
+        <div class="muted">${h([d.manufacturer, d.part_number, d.dimensions].filter(Boolean).join(" · "))}</div>
+        <div class="footer">
+          ${d.has_sheet
+            ? `<span class="badge badge-accent">Fiche disponible</span><span class="spacer"></span><a class="btn" href="#/sheet/${h(d.id)}">Voir la fiche</a>`
+            : `<span class="spacer"></span><a class="btn btn-primary" href="${h(d.request_url)}" target="_blank" rel="noopener">Demander ↗</a>`}
+        </div>
+      </div>`).join("")
+      : `<div class="empty" style="grid-column:1/-1"><b>Aucun appareil ne correspond</b>
+        « Autre appareil » ouvre le formulaire de demande vide.</div>`;
   }
   render();
   view.querySelector("#search").addEventListener("input", (e) => { searchText = e.target.value; render(); });
@@ -405,7 +462,7 @@ async function renderSheet(id) {
       <div class="buttons">
         <button class="btn" id="add-to-stock" type="button">Ajouter au stock</button>
         ${sheet.model ? `<a class="btn" href="api/${h(sheet.model)}" download="${h(id)}.glb" title="Modèle 3D au format glTF (.glb), lisible par Blender, la Visionneuse 3D de Windows…">Modèle 3D ↓</a>` : ""}
-        <a class="btn" href="${sheetIssueUrl(sheet)}" target="_blank" rel="noopener">Signaler une erreur ↗</a>
+        <a class="btn" href="${h(sheet.correction_url)}" target="_blank" rel="noopener">Signaler une erreur ↗</a>
       </div>
     </div>
     ${warningsBlock(sheet.warnings, "À vérifier dans la fiche")}

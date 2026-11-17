@@ -9,6 +9,9 @@ body:
         La fiche sera ajoutée dans une prochaine mise à jour de Prométhée, avec son brochage,
         un mode d'emploi et un modèle 3D de l'appareil, réalisé d'après sa fiche technique et vos
         photos : pas besoin d'en fournir un. Plus les informations sont précises, plus vite elle arrive.
+
+        Depuis Prométhée, la page « Demander une fiche » propose une liste de matériel courant :
+        choisir un appareil y remplit déjà ce formulaire.
   - type: input
     id: device
     attributes:
@@ -22,19 +25,12 @@ body:
     attributes:
       label: Fabricant et référence
       placeholder: Espressif ESP32-C3FH4, Texas Instruments LM317T…
-  - type: dropdown
+  - type: input
     id: category
     attributes:
       label: Catégorie
-      options:
-        - Carte de développement
-        - Module (capteur, afficheur, communication…)
-        - Circuit intégré
-        - Transistor, régulateur
-        - Composant passif
-        - Autre
-    validations:
-      required: true
+      description: Carte de développement, capteur, afficheur, communication, module, alimentation, moteur, circuit intégré, transistor, diode…
+      placeholder: Capteur
   - type: textarea
     id: links
     attributes:

@@ -106,11 +106,17 @@ docker compose up -d --build  # mettre à jour après un git pull
 
 ### Demander une fiche
 
-Bouton **Demander une fiche** dans l'interface, ou directement
-[ce formulaire](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml) :
-nom de l'appareil, référence, lien vers la datasheet et des photos. Le modèle 3D est réalisé
-d'après ces informations : rien d'autre à fournir.
+Le bouton **Demander une fiche** ouvre une liste de matériel courant (cartes Arduino, ESP32 et
+Raspberry Pi Pico, capteurs, afficheurs, modules, régulateurs, circuits intégrés, transistors,
+diodes…). Choisir un appareil ouvre le formulaire de demande sur GitHub, déjà rempli : nom,
+fabricant et référence, catégorie, liens vers la fiche technique, dimensions. Il reste à ajouter
+des photos si possible. **Autre appareil** ouvre le formulaire vide, ou directement
+[ce lien](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml).
+Les fiches sont ajoutées au fur et à mesure des demandes, dans les mises à jour.
 Une erreur dans une fiche existante se signale avec **Signaler une erreur**, sur la fiche.
+
+La liste est dans [sheets/catalog.yaml](sheets/catalog.yaml) ; ses liens sont vérifiés chaque
+semaine par le workflow [Links](.github/workflows/links.yml).
 
 Le format des fiches, pour les préparer, est décrit dans [docs/sheet-format.md](docs/sheet-format.md).
 

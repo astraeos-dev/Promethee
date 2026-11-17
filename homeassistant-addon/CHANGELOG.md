@@ -1,5 +1,13 @@
 # Journal des modifications
 
+## 0.5.0
+
+- **Demander une fiche** : liste de matériel courant (une soixantaine d'appareils : cartes,
+  capteurs, afficheurs, modules, alimentation, moteurs, circuits intégrés, transistors, diodes).
+  Chaque appareil ouvre le formulaire GitHub déjà rempli ; « Autre appareil » ouvre le formulaire vide.
+- Formulaire de demande : la catégorie devient un champ texte, pré-rempli depuis la liste.
+- Vérification hebdomadaire des liens vers les fiches techniques (workflow Links).
+
 ## 0.4.0
 
 - **Vue 3D corrigée** : elle ne se chargeait pas (fichier Three.js absent de l'image 0.3.0).

@@ -13,7 +13,8 @@ connectés à Home Assistant y ont accès.
 ## Fiches techniques
 
 Les fiches (brochage, vue 3D, mode d'emploi) sont livrées avec le module et arrivent avec ses
-mises à jour. Pour en demander une : bouton **Demander une fiche** dans Prométhée, ou
+mises à jour. Pour en demander une : bouton **Demander une fiche** dans Prométhée, qui propose
+une liste de matériel courant et ouvre le formulaire GitHub déjà rempli, ou
 [ce formulaire](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml).
 Une erreur dans une fiche se signale avec **Signaler une erreur**, sur la fiche.
 
