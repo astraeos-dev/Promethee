@@ -1,50 +1,53 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import creer_app
+from app.main import create_app
 
-FICHE = "---\nnom: Capteur essai\ncategorie: Capteur\n---\nTexte.\n"
+SHEET = "---\nname: Capteur essai\ncategory: Capteur\n---\nTexte.\n"
 
 
 @pytest.fixture
 def client(tmp_path):
-    with TestClient(creer_app(tmp_path / "fiches", tmp_path / "stock.sqlite3")) as c:
+    with TestClient(create_app(tmp_path / "sheets", tmp_path / "inventory.sqlite3")) as c:
         yield c
 
 
-def test_sante_et_interface(client):
-    assert client.get("/api/sante").json()["statut"] == "ok"
+def test_health_and_ui(client):
+    assert client.get("/api/health").json()["status"] == "ok"
     assert "Prométhée" in client.get("/").text
 
 
-def test_cycle_fiche(client):
-    r = client.post("/api/fiches", json={"source": FICHE})
-    assert r.status_code == 201 and r.json()["id"] == "capteur-essai"
-    assert client.post("/api/fiches", json={"source": FICHE}).status_code == 409
-    assert client.get("/api/fiches/capteur-essai").json()["categorie"] == "Capteur"
-    assert client.put("/api/fiches/capteur-essai", json={"source": "invalide"}).status_code == 422
-    assert client.post("/api/fiches/apercu", json={"source": FICHE}).json()["nom"] == "Capteur essai"
-    assert client.delete("/api/fiches/capteur-essai").status_code == 204
-    assert client.get("/api/fiches/capteur-essai").status_code == 404
+def test_sheet_lifecycle(client):
+    response = client.post("/api/sheets", json={"source": SHEET})
+    assert response.status_code == 201 and response.json()["id"] == "capteur-essai"
+    assert client.post("/api/sheets", json={"source": SHEET}).status_code == 409
+    assert client.get("/api/sheets/capteur-essai").json()["category"] == "Capteur"
+    assert client.put("/api/sheets/capteur-essai", json={"source": "invalid"}).status_code == 422
+    assert client.post("/api/sheets/preview", json={"source": SHEET}).json()["name"] == "Capteur essai"
+    assert client.delete("/api/sheets/capteur-essai").status_code == 204
+    assert client.get("/api/sheets/capteur-essai").status_code == 404
 
 
-def test_cycle_stock(client):
-    a = client.post("/api/articles", json={"nom": "Résistance", "valeur": "10 kΩ", "quantite": 10, "seuil": 5}).json()
-    r = client.post(f"/api/articles/{a['id']}/mouvements", json={"delta": -7, "motif": "Projet"})
-    assert r.json()["quantite"] == 3
-    assert client.post(f"/api/articles/{a['id']}/mouvements", json={"delta": -4}).status_code == 422
-    assert [x["id"] for x in client.get("/api/articles?alerte=true").json()] == [a["id"]]
-    assert client.put(f"/api/articles/{a['id']}", json={"quantite": 20}).json()["quantite"] == 20
-    assert len(client.get(f"/api/articles/{a['id']}/mouvements").json()) == 3
-    assert client.post("/api/articles", json={"nom": ""}).status_code == 422
-    assert client.post("/api/articles", json={"nom": "x", "quantite": -1}).status_code == 422
+def test_inventory_lifecycle(client):
+    item = client.post("/api/items", json={"name": "Résistance", "value": "10 kΩ", "quantity": 10, "threshold": 5}).json()
+    response = client.post(f"/api/items/{item['id']}/movements", json={"delta": -7, "reason": "Projet"})
+    assert response.json()["quantity"] == 3
+    assert client.post(f"/api/items/{item['id']}/movements", json={"delta": -4}).status_code == 422
+    assert [x["id"] for x in client.get("/api/items?low_stock=true").json()] == [item["id"]]
+    assert [x["id"] for x in client.get("/api/alerts").json()] == [item["id"]]
+    assert client.put(f"/api/items/{item['id']}", json={"quantity": 20}).json()["quantity"] == 20
+    assert len(client.get(f"/api/items/{item['id']}/movements").json()) == 3
+    assert client.post("/api/items", json={"name": ""}).status_code == 422
+    assert client.post("/api/items", json={"name": "x", "quantity": -1}).status_code == 422
 
 
-def test_export_import_csv(client):
-    client.post("/api/articles", json={"nom": "LED rouge", "quantite": 12})
-    csv = client.get("/api/export.csv").content
-    r = client.post("/api/import", files={"fichier": ("s.csv", csv, "text/csv")}).json()
-    assert r == {"crees": 0, "mis_a_jour": 1}
-    nouveau = "nom;quantite;emplacement\nLED verte;5;Tiroir D1\n".encode()
-    assert client.post("/api/import", files={"fichier": ("n.csv", nouveau)}).json()["crees"] == 1
-    assert len(client.get("/api/articles").json()) == 2
+def test_csv_export_import(client):
+    client.post("/api/items", json={"name": "LED rouge", "quantity": 12})
+    exported = client.get("/api/export.csv").content
+    result = client.post("/api/import", files={"file": ("s.csv", exported, "text/csv")}).json()
+    assert result == {"created": 0, "updated": 1}
+    # French headers from a hand-made spreadsheet are accepted too.
+    french = "nom;quantité;emplacement\nLED verte;5;Tiroir D1\n".encode()
+    assert client.post("/api/import", files={"file": ("n.csv", french)}).json()["created"] == 1
+    items = client.get("/api/items").json()
+    assert {i["name"]: i["location"] for i in items} == {"LED rouge": "", "LED verte": "Tiroir D1"}

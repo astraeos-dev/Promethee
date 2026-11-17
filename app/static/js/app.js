@@ -1,545 +1,558 @@
-// Interface de Prométhée : routeur et vues (stock, fiches, fiche détaillée, éditeur).
+// Promethee UI: router and views (inventory, sheet list, sheet page, editor).
+// Code is in English; every text shown to the user is in French.
 
-import { api, h, notifier, debounce, formaterDate, slug, TYPES, type } from "./commun.js";
-import { positionsBroches } from "./geometrie.js";
-import { creerSchema } from "./schema.js";
+import { api, escapeHtml as h, notify, debounce, formatDate, slugify, pinType } from "./common.js";
+import { pinPositions } from "./geometry.js";
+import { createPinoutDiagram } from "./pinout.js";
 
-const vue = document.getElementById("vue");
-let nettoyage = [];
+const view = document.getElementById("view");
+let cleanups = [];
 
-function nettoyer() {
-  nettoyage.forEach((f) => { try { f(); } catch { /* déjà détruit */ } });
-  nettoyage = [];
+function cleanup() {
+  cleanups.forEach((fn) => { try { fn(); } catch { /* already disposed */ } });
+  cleanups = [];
 }
 
-async function vue3D(conteneur, fiche, options) {
-  conteneur.innerHTML = '<div class="scene-chargement">Chargement de la vue 3D…</div>';
-  const { creerVue3D } = await import("./vue3d.js");
-  const v = creerVue3D(conteneur, fiche, options);
-  nettoyage.push(() => v.detruire());
-  return v;
+// Three.js is only loaded when a 3D view is shown.
+async function mountViewer(container, sheet, options) {
+  container.innerHTML = '<div class="scene-loading">Chargement de la vue 3D…</div>';
+  const { createViewer3D } = await import("./viewer3d.js");
+  const viewer = createViewer3D(container, sheet, options);
+  cleanups.push(() => viewer.dispose());
+  return viewer;
 }
 
-// ---------- Routeur ----------
+const fetchSheets = async () => (await api("/sheets")).sheets;
+
+// ---------- Router ----------
 
 const routes = [
-  [/^#\/stock$/, vueStock],
-  [/^#\/fiches$/, vueFiches],
-  [/^#\/fiche\/([a-z0-9-]+)$/, vueFiche],
-  [/^#\/nouvelle$/, () => vueEditeur(null)],
-  [/^#\/modifier\/([a-z0-9-]+)$/, vueEditeur],
+  [/^#\/stock$/, renderInventory],
+  [/^#\/sheets$/, renderSheetList],
+  [/^#\/sheet\/([a-z0-9-]+)$/, renderSheet],
+  [/^#\/new$/, () => renderEditor(null)],
+  [/^#\/edit\/([a-z0-9-]+)$/, renderEditor],
 ];
 
-async function router() {
+async function route() {
   const hash = location.hash || "#/stock";
-  nettoyer();
-  for (const a of document.querySelectorAll("[data-nav]")) {
-    const actif = hash.startsWith(`#/${a.dataset.nav}`) || (a.dataset.nav === "fiches" && /^#\/(fiche|modifier|nouvelle)/.test(hash));
-    a.classList.toggle("actif", actif);
+  cleanup();
+  for (const link of document.querySelectorAll("[data-nav]")) {
+    const isSheetPage = link.dataset.nav === "sheets" && /^#\/(sheet|edit|new)/.test(hash);
+    link.classList.toggle("active", hash.startsWith(`#/${link.dataset.nav}`) || isSheetPage);
   }
-  for (const [motif, fn] of routes) {
-    const m = hash.match(motif);
-    if (m) {
-      vue.innerHTML = "";
-      try {
-        await fn(...m.slice(1));
-      } catch (err) {
-        vue.innerHTML = `<div class="vide"><b>Impossible d'afficher cette page</b>${h(err.message)}</div>`;
-      }
-      window.scrollTo(0, 0);
-      return;
+  for (const [pattern, render] of routes) {
+    const match = hash.match(pattern);
+    if (!match) continue;
+    view.innerHTML = "";
+    try {
+      await render(...match.slice(1));
+    } catch (err) {
+      view.innerHTML = `<div class="empty"><b>Impossible d'afficher cette page</b>${h(err.message)}</div>`;
     }
+    window.scrollTo(0, 0);
+    return;
   }
   location.hash = "#/stock";
 }
 
-window.addEventListener("hashchange", router);
-router();
+window.addEventListener("hashchange", route);
+route();
 
-// ---------- Stock ----------
+// ---------- Inventory ----------
 
-async function vueStock() {
-  const etat = { q: "", categorie: "", alerte: false };
-  vue.innerHTML = `
-    <div class="titre-page">
-      <div><div class="surtitre">Inventaire</div><h1>Stock</h1><p>Composants, cartes et modules, avec leur emplacement.</p></div>
+async function renderInventory() {
+  const filters = { q: "", category: "", lowStock: false };
+  view.innerHTML = `
+    <div class="page-title">
+      <div><div class="eyebrow">Inventaire</div><h1>Stock</h1><p>Composants, cartes et modules, avec leur emplacement.</p></div>
     </div>
-    <div class="indicateurs" id="indicateurs"></div>
-    <div class="barre">
-      <input class="recherche" type="search" placeholder="Rechercher : nom, valeur, emplacement…" aria-label="Rechercher" id="q">
-      <select id="categorie" aria-label="Catégorie"><option value="">Toutes les catégories</option></select>
-      <label class="case"><input type="checkbox" id="alerte"> À réapprovisionner</label>
-      <span class="espace"></span>
-      <button class="bouton" id="importer" type="button">Importer CSV</button>
-      <a class="bouton" href="api/export.csv" download>Exporter CSV</a>
-      <button class="bouton bouton-or" id="ajouter" type="button">+ Ajouter</button>
-      <input type="file" id="fichier-csv" accept=".csv,text/csv" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="toolbar">
+      <input class="search" type="search" placeholder="Rechercher : nom, valeur, emplacement…" aria-label="Rechercher" id="search">
+      <select id="category-filter" aria-label="Catégorie"><option value="">Toutes les catégories</option></select>
+      <label class="checkbox"><input type="checkbox" id="low-stock"> À réapprovisionner</label>
+      <span class="spacer"></span>
+      <button class="btn" id="import" type="button">Importer CSV</button>
+      <a class="btn" href="api/export.csv" download>Exporter CSV</a>
+      <button class="btn btn-primary" id="add" type="button">+ Ajouter</button>
+      <input type="file" id="csv-file" accept=".csv,text/csv" hidden>
     </div>
-    <div class="carte-bloc" id="liste"></div>`;
+    <div class="card" id="item-list"></div>`;
 
-  const liste = vue.querySelector("#liste");
-  const selCategorie = vue.querySelector("#categorie");
-  let fiches = [];
+  const list = view.querySelector("#item-list");
+  const categorySelect = view.querySelector("#category-filter");
+  const sheets = await fetchSheets();
 
-  async function indicateurs() {
-    const r = await api("/resume");
-    vue.querySelector("#indicateurs").innerHTML = `
-      <div class="indicateur"><b>${r.articles}</b><span>références</span></div>
-      <div class="indicateur"><b>${r.pieces}</b><span>pièces en stock</span></div>
-      <div class="indicateur ${r.alertes ? "alerte" : ""}"><b>${r.alertes}</b><span>à réapprovisionner</span></div>
-      <div class="indicateur"><b>${r.fiches}</b><span>fiches techniques</span></div>`;
+  async function loadStats() {
+    const s = await api("/summary");
+    view.querySelector("#stats").innerHTML = `
+      <div class="stat"><b>${s.items}</b><span>références</span></div>
+      <div class="stat"><b>${s.parts}</b><span>pièces en stock</span></div>
+      <div class="stat ${s.low_stock ? "alert" : ""}"><b>${s.low_stock}</b><span>à réapprovisionner</span></div>
+      <div class="stat"><b>${s.sheets}</b><span>fiches techniques</span></div>`;
   }
 
-  async function categories() {
-    const c = await api("/categories");
-    const choisie = selCategorie.value;
-    selCategorie.innerHTML = '<option value="">Toutes les catégories</option>' +
-      c.stock.map((x) => `<option ${x === choisie ? "selected" : ""}>${h(x)}</option>`).join("");
+  async function loadCategories() {
+    const { items } = await api("/categories");
+    const selected = categorySelect.value;
+    categorySelect.innerHTML = '<option value="">Toutes les catégories</option>' +
+      items.map((c) => `<option ${c === selected ? "selected" : ""}>${h(c)}</option>`).join("");
   }
 
-  async function charger() {
-    const p = new URLSearchParams({ q: etat.q, categorie: etat.categorie, alerte: etat.alerte });
-    const articles = await api(`/articles?${p}`);
-    if (!articles.length) {
-      const filtre = etat.q || etat.categorie || etat.alerte;
-      liste.innerHTML = `<div class="vide"><b>${filtre ? "Aucun article ne correspond" : "Le stock est vide"}</b>
-        ${filtre ? "Modifiez la recherche ou les filtres." : "Ajoutez un premier article, ou importez un fichier CSV."}</div>`;
+  async function loadItems() {
+    const params = new URLSearchParams({ q: filters.q, category: filters.category, low_stock: filters.lowStock });
+    const items = await api(`/items?${params}`);
+    if (!items.length) {
+      const filtered = filters.q || filters.category || filters.lowStock;
+      list.innerHTML = `<div class="empty"><b>${filtered ? "Aucun article ne correspond" : "Le stock est vide"}</b>
+        ${filtered ? "Modifiez la recherche ou les filtres." : "Ajoutez un premier article, ou importez un fichier CSV."}</div>`;
       return;
     }
-    const nomsFiches = new Map(fiches.map((f) => [f.id, f.nom]));
-    liste.innerHTML = `<table class="table-stock">
-      <thead><tr><th>Article</th><th>Catégorie</th><th>Emplacement</th><th class="nombre">Quantité</th><th class="nombre">Seuil</th><th>Fiche</th><th></th></tr></thead>
-      <tbody>${articles.map((a) => {
-        const bas = a.quantite <= a.seuil;
-        const details = [a.valeur, a.boitier].filter(Boolean).join(" · ");
-        return `<tr data-id="${a.id}">
-          <td class="col-nom"><b>${h(a.nom)}</b>${details ? `<div class="secondaire">${h(details)}</div>` : ""}</td>
-          <td>${a.categorie ? `<span class="pastille">${h(a.categorie)}</span>` : ""}</td>
-          <td>${h(a.emplacement) || '<span class="secondaire">—</span>'}</td>
-          <td class="nombre"><span class="quantite ${bas ? "bas" : ""}">
-            <button class="bouton bouton-icone" data-delta="-1" type="button" aria-label="Retirer une pièce" ${a.quantite ? "" : "disabled"}>−</button>
-            <b>${a.quantite}</b>
-            <button class="bouton bouton-icone" data-delta="1" type="button" aria-label="Ajouter une pièce">+</button></span></td>
-          <td class="nombre col-seuil">${a.seuil}</td>
-          <td class="col-fiche">${a.fiche ? (nomsFiches.has(a.fiche)
-            ? `<a href="#/fiche/${h(a.fiche)}">${h(nomsFiches.get(a.fiche))}</a>`
-            : `<span class="pastille pastille-alerte" title="Fiche introuvable">${h(a.fiche)}</span>`) : ""}</td>
-          <td class="actions col-actions">
-            <button class="bouton" data-action="historique" type="button">Historique</button>
-            <button class="bouton" data-action="modifier" type="button">Modifier</button></td>
-        </tr>`;
-      }).join("")}</tbody></table>`;
+    const sheetNames = new Map(sheets.map((s) => [s.id, s.name]));
+    list.innerHTML = `<table class="stock-table">
+      <thead><tr><th>Article</th><th>Catégorie</th><th>Emplacement</th><th class="num">Quantité</th><th class="num">Seuil</th><th>Fiche</th><th></th></tr></thead>
+      <tbody>${items.map((item) => itemRow(item, sheetNames)).join("")}</tbody></table>`;
   }
 
-  async function tout() {
-    await Promise.all([charger(), indicateurs(), categories()]);
+  async function reloadAll() {
+    await Promise.all([loadItems(), loadStats(), loadCategories()]);
   }
+  await reloadAll();
 
-  fiches = (await api("/fiches")).fiches;
-  await tout();
+  view.querySelector("#search").addEventListener("input", debounce((e) => { filters.q = e.target.value; loadItems(); }, 200));
+  categorySelect.addEventListener("change", (e) => { filters.category = e.target.value; loadItems(); });
+  view.querySelector("#low-stock").addEventListener("change", (e) => { filters.lowStock = e.target.checked; loadItems(); });
+  view.querySelector("#add").addEventListener("click", () => openItemDialog(null, sheets, reloadAll));
 
-  vue.querySelector("#q").addEventListener("input", debounce((e) => { etat.q = e.target.value; charger(); }, 200));
-  selCategorie.addEventListener("change", (e) => { etat.categorie = e.target.value; charger(); });
-  vue.querySelector("#alerte").addEventListener("change", (e) => { etat.alerte = e.target.checked; charger(); });
-  vue.querySelector("#ajouter").addEventListener("click", () => dialogueArticle(null, fiches, tout));
-  const fichierCsv = vue.querySelector("#fichier-csv");
-  vue.querySelector("#importer").addEventListener("click", () => fichierCsv.click());
-  fichierCsv.addEventListener("change", async () => {
-    if (!fichierCsv.files[0]) return;
-    const fd = new FormData();
-    fd.append("fichier", fichierCsv.files[0]);
+  const csvInput = view.querySelector("#csv-file");
+  view.querySelector("#import").addEventListener("click", () => csvInput.click());
+  csvInput.addEventListener("change", async () => {
+    if (!csvInput.files[0]) return;
+    const form = new FormData();
+    form.append("file", csvInput.files[0]);
     try {
-      const r = await api("/import", { methode: "POST", corps: fd });
-      notifier(`Import terminé : ${r.crees} créé(s), ${r.mis_a_jour} mis à jour.`);
-      await tout();
-    } catch (err) { notifier(err.message, true); }
-    fichierCsv.value = "";
+      const result = await api("/import", { method: "POST", body: form });
+      notify(`Import terminé : ${result.created} créé(s), ${result.updated} mis à jour.`);
+      await reloadAll();
+    } catch (err) { notify(err.message, true); }
+    csvInput.value = "";
   });
 
-  liste.addEventListener("click", async (e) => {
-    const ligne = e.target.closest("tr[data-id]");
-    if (!ligne) return;
-    const id = Number(ligne.dataset.id);
-    const bouton = e.target.closest("button");
-    if (!bouton) return;
+  list.addEventListener("click", async (e) => {
+    const row = e.target.closest("tr[data-id]");
+    const button = e.target.closest("button");
+    if (!row || !button) return;
+    const id = Number(row.dataset.id);
     try {
-      if (bouton.dataset.delta) {
-        bouton.disabled = true;
-        await api(`/articles/${id}/mouvements`, { methode: "POST", corps: { delta: Number(bouton.dataset.delta), motif: Number(bouton.dataset.delta) > 0 ? "Ajout" : "Sortie" } });
-        await Promise.all([charger(), indicateurs()]);
-      } else if (bouton.dataset.action === "modifier") {
-        dialogueArticle(await api(`/articles/${id}`), fiches, tout);
-      } else if (bouton.dataset.action === "historique") {
-        dialogueHistorique(await api(`/articles/${id}`));
+      if (button.dataset.delta) {
+        button.disabled = true;
+        const delta = Number(button.dataset.delta);
+        await api(`/items/${id}/movements`, { method: "POST", body: { delta, reason: delta > 0 ? "Ajout" : "Sortie" } });
+        await Promise.all([loadItems(), loadStats()]);
+      } else if (button.dataset.action === "edit") {
+        openItemDialog(await api(`/items/${id}`), sheets, reloadAll);
+      } else if (button.dataset.action === "history") {
+        openHistoryDialog(await api(`/items/${id}`));
       }
-    } catch (err) { notifier(err.message, true); bouton.disabled = false; }
+    } catch (err) { notify(err.message, true); button.disabled = false; }
   });
 }
 
-function dialogue(html) {
-  const d = document.createElement("dialog");
-  d.innerHTML = html;
-  document.body.append(d);
-  d.addEventListener("close", () => d.remove());
-  nettoyage.push(() => d.close());
-  d.showModal();
-  return d;
+function itemRow(item, sheetNames) {
+  const low = item.quantity <= item.threshold;
+  const details = [item.value, item.package].filter(Boolean).join(" · ");
+  let sheetCell = "";
+  if (item.sheet) {
+    sheetCell = sheetNames.has(item.sheet)
+      ? `<a href="#/sheet/${h(item.sheet)}">${h(sheetNames.get(item.sheet))}</a>`
+      : `<span class="badge badge-danger" title="Fiche introuvable">${h(item.sheet)}</span>`;
+  }
+  return `<tr data-id="${item.id}">
+    <td class="col-name"><b>${h(item.name)}</b>${details ? `<div class="muted">${h(details)}</div>` : ""}</td>
+    <td>${item.category ? `<span class="badge">${h(item.category)}</span>` : ""}</td>
+    <td>${h(item.location) || '<span class="muted">—</span>'}</td>
+    <td class="num"><span class="qty ${low ? "low" : ""}">
+      <button class="btn btn-icon" data-delta="-1" type="button" aria-label="Retirer une pièce" ${item.quantity ? "" : "disabled"}>−</button>
+      <b>${item.quantity}</b>
+      <button class="btn btn-icon" data-delta="1" type="button" aria-label="Ajouter une pièce">+</button></span></td>
+    <td class="num col-threshold">${item.threshold}</td>
+    <td class="col-sheet">${sheetCell}</td>
+    <td class="actions col-actions">
+      <button class="btn" data-action="history" type="button">Historique</button>
+      <button class="btn" data-action="edit" type="button">Modifier</button></td>
+  </tr>`;
 }
 
-function dialogueArticle(article, fiches, apres, prerempli = {}) {
-  const a = article || { quantite: 0, seuil: 0, ...prerempli };
-  const champ = (nom, libelle, attrs = "", classe = "") =>
-    `<label class="champ ${classe}"><span>${libelle}</span><input name="${nom}" value="${h(a[nom] ?? "")}" ${attrs}></label>`;
-  const d = dialogue(`<form method="dialog">
-    <h2>${article ? "Modifier l'article" : "Nouvel article"}</h2>
-    <div class="formulaire">
-      ${champ("nom", "Nom", 'required autofocus placeholder="Résistance, ESP32…"', "large")}
-      ${champ("categorie", "Catégorie", 'list="liste-categories" placeholder="Résistance, Capteur…"')}
-      ${champ("valeur", "Valeur", 'placeholder="10 kΩ, 100 nF…"')}
-      ${champ("boitier", "Boîtier", 'placeholder="0805, DIP-8, TO-92…"')}
-      ${champ("emplacement", "Emplacement", 'placeholder="Tiroir A3"')}
-      ${champ("quantite", "Quantité", 'type="number" min="0" step="1" required')}
-      ${champ("seuil", "Seuil d'alerte", 'type="number" min="0" step="1"')}
-      <label class="champ"><span>Fiche liée</span><select name="fiche"><option value="">Aucune</option>
-        ${fiches.map((f) => `<option value="${h(f.id)}" ${f.id === a.fiche ? "selected" : ""}>${h(f.nom)}</option>`).join("")}</select></label>
-      ${champ("fournisseur", "Fournisseur")}
-      ${champ("prix", "Prix unitaire (€)", 'type="number" min="0" step="0.001"')}
-      <label class="champ large"><span>Notes</span><textarea name="notes" rows="3">${h(a.notes ?? "")}</textarea></label>
+function openDialog(html) {
+  const dialog = document.createElement("dialog");
+  dialog.innerHTML = html;
+  document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove());
+  cleanups.push(() => dialog.close());
+  dialog.showModal();
+  return dialog;
+}
+
+function openItemDialog(item, sheets, onSaved, defaults = {}) {
+  const data = item || { quantity: 0, threshold: 0, ...defaults };
+  const field = (name, label, attrs = "", cls = "") =>
+    `<label class="field ${cls}"><span>${label}</span><input name="${name}" value="${h(data[name] ?? "")}" ${attrs}></label>`;
+  const dialog = openDialog(`<form method="dialog">
+    <h2>${item ? "Modifier l'article" : "Nouvel article"}</h2>
+    <div class="form-grid">
+      ${field("name", "Nom", 'required autofocus placeholder="Résistance, ESP32…"', "wide")}
+      ${field("category", "Catégorie", 'list="category-options" placeholder="Résistance, Capteur…"')}
+      ${field("value", "Valeur", 'placeholder="10 kΩ, 100 nF…"')}
+      ${field("package", "Boîtier", 'placeholder="0805, DIP-8, TO-92…"')}
+      ${field("location", "Emplacement", 'placeholder="Tiroir A3"')}
+      ${field("quantity", "Quantité", 'type="number" min="0" step="1" required')}
+      ${field("threshold", "Seuil d'alerte", 'type="number" min="0" step="1"')}
+      <label class="field"><span>Fiche liée</span><select name="sheet"><option value="">Aucune</option>
+        ${sheets.map((s) => `<option value="${h(s.id)}" ${s.id === data.sheet ? "selected" : ""}>${h(s.name)}</option>`).join("")}</select></label>
+      ${field("supplier", "Fournisseur")}
+      ${field("price", "Prix unitaire (€)", 'type="number" min="0" step="0.001"')}
+      <label class="field wide"><span>Notes</span><textarea name="notes" rows="3">${h(data.notes ?? "")}</textarea></label>
     </div>
-    <datalist id="liste-categories"></datalist>
-    <div class="dialogue-pied">
-      ${article ? '<button class="bouton bouton-danger" value="supprimer" type="button" data-action="supprimer">Supprimer</button>' : ""}
-      <span class="espace"></span>
-      <button class="bouton" value="annuler" formnovalidate>Annuler</button>
-      <button class="bouton bouton-or" value="enregistrer" type="submit">Enregistrer</button>
+    <datalist id="category-options"></datalist>
+    <div class="dialog-footer">
+      ${item ? '<button class="btn btn-danger" type="button" data-action="delete">Supprimer</button>' : ""}
+      <span class="spacer"></span>
+      <button class="btn" value="cancel" formnovalidate>Annuler</button>
+      <button class="btn btn-primary" value="save" type="submit">Enregistrer</button>
     </div></form>`);
+
   api("/categories").then((c) => {
-    const toutes = [...new Set([...c.stock, ...c.fiches])].sort((x, y) => x.localeCompare(y, "fr"));
-    d.querySelector("#liste-categories").innerHTML = toutes.map((x) => `<option value="${h(x)}">`).join("");
+    const all = [...new Set([...c.items, ...c.sheets])].sort((a, b) => a.localeCompare(b, "fr"));
+    dialog.querySelector("#category-options").innerHTML = all.map((x) => `<option value="${h(x)}">`).join("");
   });
-  const form = d.querySelector("form");
+
+  const form = dialog.querySelector("form");
   form.addEventListener("submit", async (e) => {
-    if (e.submitter?.value !== "enregistrer") return;
+    if (e.submitter?.value !== "save") return;
     e.preventDefault();
-    const donnees = Object.fromEntries(new FormData(form));
-    donnees.quantite = Number(donnees.quantite || 0);
-    donnees.seuil = Number(donnees.seuil || 0);
-    donnees.prix = donnees.prix === "" ? null : Number(donnees.prix);
+    const values = Object.fromEntries(new FormData(form));
+    values.quantity = Number(values.quantity || 0);
+    values.threshold = Number(values.threshold || 0);
+    values.price = values.price === "" ? null : Number(values.price);
     try {
-      if (article) await api(`/articles/${article.id}`, { methode: "PUT", corps: donnees });
-      else await api("/articles", { methode: "POST", corps: donnees });
-      notifier(article ? "Article mis à jour." : "Article ajouté.");
-      d.close();
-      await apres();
-    } catch (err) { notifier(err.message, true); }
+      if (item) await api(`/items/${item.id}`, { method: "PUT", body: values });
+      else await api("/items", { method: "POST", body: values });
+      notify(item ? "Article mis à jour." : "Article ajouté.");
+      dialog.close();
+      await onSaved();
+    } catch (err) { notify(err.message, true); }
   });
-  d.querySelector("[data-action=supprimer]")?.addEventListener("click", async () => {
-    if (!confirm(`Supprimer « ${article.nom} » et son historique ?`)) return;
+
+  dialog.querySelector("[data-action=delete]")?.addEventListener("click", async () => {
+    if (!confirm(`Supprimer « ${item.name} » et son historique ?`)) return;
     try {
-      await api(`/articles/${article.id}`, { methode: "DELETE" });
-      notifier("Article supprimé.");
-      d.close();
-      await apres();
-    } catch (err) { notifier(err.message, true); }
+      await api(`/items/${item.id}`, { method: "DELETE" });
+      notify("Article supprimé.");
+      dialog.close();
+      await onSaved();
+    } catch (err) { notify(err.message, true); }
   });
 }
 
-async function dialogueHistorique(article) {
-  const mouvements = await api(`/articles/${article.id}/mouvements`);
-  dialogue(`<div>
-    <h2>Historique : ${h(article.nom)}</h2>
-    <div class="historique carte-bloc">${mouvements.length ? `<table>
-      <thead><tr><th>Date</th><th>Motif</th><th class="nombre">Variation</th><th class="nombre">Stock</th></tr></thead>
-      <tbody>${mouvements.map((m) => `<tr><td>${formaterDate(m.date)}</td><td>${h(m.motif) || "—"}</td>
-        <td class="nombre ${m.delta > 0 ? "positif" : "negatif"}">${m.delta > 0 ? "+" : ""}${m.delta}</td>
-        <td class="nombre">${m.quantite}</td></tr>`).join("")}</tbody></table>`
-      : '<div class="vide">Aucun mouvement enregistré.</div>'}</div>
-    <div class="dialogue-pied"><span class="espace"></span><form method="dialog"><button class="bouton">Fermer</button></form></div></div>`);
+async function openHistoryDialog(item) {
+  const movements = await api(`/items/${item.id}/movements`);
+  const rows = movements.map((m) => `<tr><td>${formatDate(m.created_at)}</td><td>${h(m.reason) || "—"}</td>
+    <td class="num ${m.delta > 0 ? "positive" : "negative"}">${m.delta > 0 ? "+" : ""}${m.delta}</td>
+    <td class="num">${m.quantity}</td></tr>`).join("");
+  openDialog(`<div>
+    <h2>Historique : ${h(item.name)}</h2>
+    <div class="history card">${movements.length ? `<table>
+      <thead><tr><th>Date</th><th>Motif</th><th class="num">Variation</th><th class="num">Stock</th></tr></thead>
+      <tbody>${rows}</tbody></table>` : '<div class="empty">Aucun mouvement enregistré.</div>'}</div>
+    <div class="dialog-footer"><span class="spacer"></span><form method="dialog"><button class="btn">Fermer</button></form></div></div>`);
 }
 
-// ---------- Liste des fiches ----------
+// ---------- Sheet list ----------
 
-async function vueFiches() {
-  const { fiches, erreurs } = await api("/fiches");
-  const categories = [...new Set(fiches.map((f) => f.categorie))];
-  let filtre = "", texte = "";
-  vue.innerHTML = `
-    <div class="titre-page">
-      <div><div class="surtitre">Documentation</div><h1>Fiches techniques</h1>
-      <p>Un fichier par appareil dans le dossier <code>fiches/</code>, à écrire à la main ou depuis l'éditeur.</p></div>
-      <span class="espace"></span><a class="bouton bouton-or" href="#/nouvelle">+ Nouvelle fiche</a>
+async function renderSheetList() {
+  const { sheets, errors } = await api("/sheets");
+  const categories = [...new Set(sheets.map((s) => s.category))];
+  let categoryFilter = "";
+  let searchText = "";
+  view.innerHTML = `
+    <div class="page-title">
+      <div><div class="eyebrow">Documentation</div><h1>Fiches techniques</h1>
+      <p>Un fichier par appareil dans le dossier <code>sheets/</code>, à écrire à la main ou depuis l'éditeur.</p></div>
+      <span class="spacer"></span><a class="btn btn-primary" href="#/new">+ Nouvelle fiche</a>
     </div>
-    ${erreurs.length ? `<div class="erreurs-fiches"><h2>${erreurs.length} fiche(s) illisible(s)</h2><ul>
-      ${erreurs.map((e) => `<li><code>${h(e.id)}.md</code> : ${h(e.erreur)} <a href="#/modifier/${h(e.id)}">Corriger</a></li>`).join("")}</ul></div>` : ""}
-    <div class="barre">
-      <input class="recherche" type="search" placeholder="Rechercher une fiche…" aria-label="Rechercher une fiche" id="q">
-      <div class="filtres" id="filtres">
-        <button class="bouton actif" data-categorie="" type="button">Toutes</button>
-        ${categories.map((c) => `<button class="bouton" data-categorie="${h(c)}" type="button">${h(c)}</button>`).join("")}
+    ${errors.length ? `<div class="sheet-errors"><h2>${errors.length} fiche(s) illisible(s)</h2><ul>
+      ${errors.map((e) => `<li><code>${h(e.id)}.md</code> : ${h(e.error)} <a href="#/edit/${h(e.id)}">Corriger</a></li>`).join("")}</ul></div>` : ""}
+    <div class="toolbar">
+      <input class="search" type="search" placeholder="Rechercher une fiche…" aria-label="Rechercher une fiche" id="search">
+      <div class="filters" id="filters">
+        <button class="btn active" data-category="" type="button">Toutes</button>
+        ${categories.map((c) => `<button class="btn" data-category="${h(c)}" type="button">${h(c)}</button>`).join("")}
       </div>
     </div>
-    <div class="grille" id="grille"></div>`;
-  const grille = vue.querySelector("#grille");
-  function afficher() {
-    const t = texte.toLowerCase();
-    const visibles = fiches.filter((f) => (!filtre || f.categorie === filtre) &&
-      (!t || [f.nom, f.reference, f.fabricant, f.description, ...f.tags].join(" ").toLowerCase().includes(t)));
-    grille.innerHTML = visibles.length ? visibles.map((f) => `
-      <a class="fiche-carte" href="#/fiche/${h(f.id)}">
-        <div class="surtitre">${h(f.categorie)}</div>
-        <h3>${h(f.nom)}</h3>
-        <p>${h(f.description) || '<span class="secondaire">Pas de description.</span>'}</p>
-        <div class="pied">
-          ${f.nb_broches ? `<span class="pastille pastille-or">${f.nb_broches} broches</span>` : ""}
-          ${f.tags.slice(0, 4).map((x) => `<span class="pastille">${h(x)}</span>`).join("")}
+    <div class="grid" id="sheet-grid"></div>`;
+
+  const grid = view.querySelector("#sheet-grid");
+  function render() {
+    const text = searchText.toLowerCase();
+    const visible = sheets.filter((s) => (!categoryFilter || s.category === categoryFilter) &&
+      (!text || [s.name, s.part_number, s.manufacturer, s.description, ...s.tags].join(" ").toLowerCase().includes(text)));
+    grid.innerHTML = visible.length ? visible.map((s) => `
+      <a class="sheet-card" href="#/sheet/${h(s.id)}">
+        <div class="eyebrow">${h(s.category)}</div>
+        <h3>${h(s.name)}</h3>
+        <p>${h(s.description) || '<span class="muted">Pas de description.</span>'}</p>
+        <div class="footer">
+          ${s.pin_count ? `<span class="badge badge-accent">${s.pin_count} broches</span>` : ""}
+          ${s.tags.slice(0, 4).map((t) => `<span class="badge">${h(t)}</span>`).join("")}
         </div>
       </a>`).join("")
-      : `<div class="vide" style="grid-column:1/-1"><b>Aucune fiche</b>${fiches.length ? "Aucune fiche ne correspond à la recherche." : "Créez la première depuis l'éditeur, ou déposez un fichier .md dans le dossier fiches/."}</div>`;
+      : `<div class="empty" style="grid-column:1/-1"><b>Aucune fiche</b>${sheets.length
+        ? "Aucune fiche ne correspond à la recherche."
+        : "Créez la première depuis l'éditeur, ou déposez un fichier .md dans le dossier sheets/."}</div>`;
   }
-  afficher();
-  vue.querySelector("#q").addEventListener("input", (e) => { texte = e.target.value; afficher(); });
-  vue.querySelector("#filtres").addEventListener("click", (e) => {
-    const b = e.target.closest("button");
-    if (!b) return;
-    filtre = b.dataset.categorie;
-    vue.querySelectorAll("#filtres button").forEach((x) => x.classList.toggle("actif", x === b));
-    afficher();
+  render();
+  view.querySelector("#search").addEventListener("input", (e) => { searchText = e.target.value; render(); });
+  view.querySelector("#filters").addEventListener("click", (e) => {
+    const button = e.target.closest("button");
+    if (!button) return;
+    categoryFilter = button.dataset.category;
+    view.querySelectorAll("#filters button").forEach((b) => b.classList.toggle("active", b === button));
+    render();
   });
 }
 
-// ---------- Fiche détaillée ----------
+// ---------- Sheet page ----------
 
-function blocBrochage(fiche, synchro) {
-  const positions = positionsBroches(fiche);
-  if (!positions.length) return '<div class="vide"><b>Pas de brochage</b>Ajoutez une section « brochage » à la fiche.</div>';
-  const typesPresents = [...new Set(positions.map((p) => p.broche.type))];
+function pinoutSection(sheet, idPrefix) {
+  const positions = pinPositions(sheet);
+  if (!positions.length) return '<div class="empty"><b>Pas de brochage</b>Ajoutez une section « pinout » à la fiche.</div>';
+  const types = [...new Set(positions.map((p) => p.pin.type))];
+  const multipleRows = sheet.pinout.rows.length > 1;
   return `
-    <div class="legende" role="group" aria-label="Filtrer par type de broche">
-      ${typesPresents.map((t) => `<button type="button" data-type="${t}"><span class="puce" style="background:${type(t).couleur}"></span>${h(type(t).libelle)}</button>`).join("")}
+    <div class="legend" role="group" aria-label="Filtrer par type de broche">
+      ${types.map((t) => `<button type="button" data-type="${t}"><span class="dot" style="background:${pinType(t).color}"></span>${h(pinType(t).label)}</button>`).join("")}
     </div>
-    <div class="brochage">
-      <div class="schema" id="${synchro}-schema"></div>
-      <div class="carte-bloc"><table class="table-broches">
+    <div class="pinout">
+      <div class="pinout-diagram" id="${idPrefix}-diagram"></div>
+      <div class="card"><table class="pin-table">
         <thead><tr><th>N°</th><th>Nom</th><th>Fonctions</th><th>Description</th></tr></thead>
-        <tbody>${positions.map((p) => `<tr data-cle="${p.cle}">
-          <td class="secondaire">${fiche.brochage.rangees.length > 1 ? `${h(p.rangee.nom)}·` : ""}${h(p.broche.n)}</td>
-          <td><span class="nom-broche"><span class="puce" style="background:${type(p.broche.type).couleur}" title="${h(type(p.broche.type).libelle)}"></span>${h(p.broche.nom)}</span></td>
-          <td><div class="fonctions">${p.broche.fonctions.map((f) => `<code>${h(f)}</code>`).join("")}</div></td>
-          <td>${h(p.broche.desc)}</td></tr>`).join("")}</tbody></table></div>
+        <tbody>${positions.map((p) => `<tr data-key="${p.key}">
+          <td class="muted">${multipleRows ? `${h(p.row.name)}·` : ""}${h(p.pin.n)}</td>
+          <td><span class="pin-name"><span class="dot" style="background:${pinType(p.pin.type).color}" title="${h(pinType(p.pin.type).label)}"></span>${h(p.pin.name)}</span></td>
+          <td><div class="functions">${p.pin.functions.map((f) => `<code>${h(f)}</code>`).join("")}</div></td>
+          <td>${h(p.pin.description)}</td></tr>`).join("")}</tbody></table></div>
     </div>`;
 }
 
-// Relie schéma 2D, tableau et vue 3D : survoler l'un éclaire les autres.
-function relier(racine, fiche, schemaId, vue3dPromesse) {
-  const lignes = new Map([...racine.querySelectorAll(".table-broches tr[data-cle]")].map((tr) => [tr.dataset.cle, tr]));
-  let v3d = null;
-  let schema = null;
-  const survol = (cle, source) => {
-    lignes.forEach((tr, c) => tr.classList.toggle("survol", c === cle));
-    if (source !== "schema") schema?.survoler(cle);
-    if (source !== "3d") v3d?.survoler(cle);
+// Link the 2D diagram, the pin table and the 3D view: hovering one lights up the others.
+function linkPinViews(root, sheet, diagramId, viewerPromise) {
+  const rows = new Map([...root.querySelectorAll(".pin-table tr[data-key]")].map((tr) => [tr.dataset.key, tr]));
+  let viewer = null;
+  let diagram = null;
+  const hover = (key, source) => {
+    rows.forEach((tr, k) => tr.classList.toggle("hover", k === key));
+    if (source !== "diagram") diagram?.hover(key);
+    if (source !== "3d") viewer?.hover(key);
   };
-  const conteneurSchema = racine.querySelector(`#${schemaId}`);
-  if (conteneurSchema) schema = creerSchema(conteneurSchema, fiche, { surSurvol: (c) => survol(c, "schema") });
-  vue3dPromesse?.then((v) => { v3d = v; });
-  lignes.forEach((tr, cle) => {
-    tr.addEventListener("mouseenter", () => survol(cle, "table"));
-    tr.addEventListener("mouseleave", () => survol(null, "table"));
+  const diagramContainer = root.querySelector(`#${diagramId}`);
+  if (diagramContainer) diagram = createPinoutDiagram(diagramContainer, sheet, { onHover: (k) => hover(k, "diagram") });
+  viewerPromise?.then((v) => { viewer = v; });
+  rows.forEach((tr, key) => {
+    tr.addEventListener("mouseenter", () => hover(key, "table"));
+    tr.addEventListener("mouseleave", () => hover(null, "table"));
   });
-  const positions = positionsBroches(fiche);
-  const actifs = new Set();
-  racine.querySelector(".legende")?.addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-type]");
-    if (!b) return;
-    actifs.has(b.dataset.type) ? actifs.delete(b.dataset.type) : actifs.add(b.dataset.type);
-    b.classList.toggle("actif", actifs.has(b.dataset.type));
-    const cles = actifs.size ? new Set(positions.filter((p) => actifs.has(p.broche.type)).map((p) => p.cle)) : null;
-    schema?.surligner(cles);
-    v3d?.surligner(cles);
-    lignes.forEach((tr, c) => tr.classList.toggle("attenuee", Boolean(cles) && !cles.has(c)));
+
+  const positions = pinPositions(sheet);
+  const selectedTypes = new Set();
+  root.querySelector(".legend")?.addEventListener("click", (e) => {
+    const button = e.target.closest("button[data-type]");
+    if (!button) return;
+    const type = button.dataset.type;
+    selectedTypes.has(type) ? selectedTypes.delete(type) : selectedTypes.add(type);
+    button.classList.toggle("active", selectedTypes.has(type));
+    const keys = selectedTypes.size ? new Set(positions.filter((p) => selectedTypes.has(p.pin.type)).map((p) => p.key)) : null;
+    diagram?.highlight(keys);
+    viewer?.highlight(keys);
+    rows.forEach((tr, k) => tr.classList.toggle("dimmed", Boolean(keys) && !keys.has(k)));
   });
-  return { survol: (cle) => survol(cle, "3d") };
+  return { hoverFrom3D: (key) => hover(key, "3d") };
 }
 
-async function vueFiche(id) {
-  const fiche = await api(`/fiches/${id}`);
-  const articles = await api(`/articles?fiche=${encodeURIComponent(id)}`);
-  const enStock = articles.reduce((n, a) => n + a.quantite, 0);
-  document.title = `${fiche.nom} · Prométhée`;
-  nettoyage.push(() => { document.title = "Prométhée"; });
-  const specs = Object.entries(fiche.caracteristiques);
-  vue.innerHTML = `
-    <div class="fiche-entete">
-      <div class="texte">
-        <div class="surtitre">${h(fiche.categorie)}</div>
-        <h1>${h(fiche.nom)}</h1>
-        ${fiche.fabricant || fiche.reference ? `<div class="secondaire">${h([fiche.fabricant, fiche.reference].filter(Boolean).join(" · "))}</div>` : ""}
-        <p>${h(fiche.description)}</p>
-        <div class="etiquettes">
-          <span class="pastille ${enStock ? "pastille-or" : "pastille-alerte"}">${enStock ? `${enStock} en stock` : "Pas en stock"}</span>
-          ${fiche.tags.map((t) => `<span class="pastille">${h(t)}</span>`).join("")}
+function warningsBlock(warnings, title) {
+  if (!warnings.length) return "";
+  return `<div class="warnings"><b>${title}</b><ul>${warnings.map((w) => `<li>${h(w)}</li>`).join("")}</ul></div>`;
+}
+
+async function renderSheet(id) {
+  const sheet = await api(`/sheets/${id}`);
+  const items = await api(`/items?sheet=${encodeURIComponent(id)}`);
+  const inStock = items.reduce((total, item) => total + item.quantity, 0);
+  document.title = `${sheet.name} · Prométhée`;
+  cleanups.push(() => { document.title = "Prométhée"; });
+  const specs = Object.entries(sheet.specs);
+  view.innerHTML = `
+    <div class="sheet-header">
+      <div class="text">
+        <div class="eyebrow">${h(sheet.category)}</div>
+        <h1>${h(sheet.name)}</h1>
+        ${sheet.manufacturer || sheet.part_number ? `<div class="muted">${h([sheet.manufacturer, sheet.part_number].filter(Boolean).join(" · "))}</div>` : ""}
+        <p>${h(sheet.description)}</p>
+        <div class="tags">
+          <span class="badge ${inStock ? "badge-accent" : "badge-danger"}">${inStock ? `${inStock} en stock` : "Pas en stock"}</span>
+          ${sheet.tags.map((t) => `<span class="badge">${h(t)}</span>`).join("")}
         </div>
       </div>
-      <div class="boutons">
-        <button class="bouton" id="ajout-stock" type="button">Ajouter au stock</button>
-        <a class="bouton" href="#/modifier/${h(id)}">Modifier la fiche</a>
+      <div class="buttons">
+        <button class="btn" id="add-to-stock" type="button">Ajouter au stock</button>
+        <a class="btn" href="#/edit/${h(id)}">Modifier la fiche</a>
       </div>
     </div>
-    ${fiche.avertissements.length ? `<div class="avertissements"><b>À vérifier dans la fiche</b><ul>${fiche.avertissements.map((a) => `<li>${h(a)}</li>`).join("")}</ul></div>` : ""}
+    ${warningsBlock(sheet.warnings, "À vérifier dans la fiche")}
     <div id="scene"></div>
-    <div class="onglets" role="tablist">
-      <button role="tab" aria-selected="true" data-onglet="brochage" type="button">Brochage</button>
-      <button role="tab" aria-selected="false" data-onglet="utilisation" type="button">Utilisation</button>
-      <button role="tab" aria-selected="false" data-onglet="caracteristiques" type="button">Caractéristiques</button>
-      <button role="tab" aria-selected="false" data-onglet="stock" type="button">Stock (${articles.length})</button>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="pinout" type="button">Brochage</button>
+      <button role="tab" aria-selected="false" data-tab="usage" type="button">Utilisation</button>
+      <button role="tab" aria-selected="false" data-tab="specs" type="button">Caractéristiques</button>
+      <button role="tab" aria-selected="false" data-tab="stock" type="button">Stock (${items.length})</button>
     </div>
-    <section data-panneau="brochage">${blocBrochage(fiche, "fiche")}</section>
-    <section data-panneau="utilisation" hidden><div class="contenu">${fiche.html || '<p class="secondaire">Pas de texte dans cette fiche.</p>'}</div></section>
-    <section data-panneau="caracteristiques" hidden>
-      ${specs.length ? `<dl class="specs">${specs.map(([k, v]) => `<dt>${h(k)}</dt><dd>${h(v)}</dd>`).join("")}</dl>` : '<p class="secondaire">Aucune caractéristique renseignée.</p>'}
-      ${fiche.liens.length ? `<ul class="liens">${fiche.liens.map((l) => `<li><a href="${h(l.url)}" target="_blank" rel="noopener noreferrer">${h(l.titre)}</a></li>`).join("")}</ul>` : ""}
+    <section data-panel="pinout">${pinoutSection(sheet, "sheet")}</section>
+    <section data-panel="usage" hidden><div class="prose">${sheet.html || '<p class="muted">Pas de texte dans cette fiche.</p>'}</div></section>
+    <section data-panel="specs" hidden>
+      ${specs.length ? `<dl class="specs">${specs.map(([k, v]) => `<dt>${h(k)}</dt><dd>${h(v)}</dd>`).join("")}</dl>` : '<p class="muted">Aucune caractéristique renseignée.</p>'}
+      ${sheet.links.length ? `<ul class="links">${sheet.links.map((l) => `<li><a href="${h(l.url)}" target="_blank" rel="noopener noreferrer">${h(l.title)}</a></li>`).join("")}</ul>` : ""}
     </section>
-    <section data-panneau="stock" hidden>
-      <div class="carte-bloc">${articles.length ? `<table><thead><tr><th>Article</th><th>Emplacement</th><th class="nombre">Quantité</th></tr></thead><tbody>
-        ${articles.map((a) => `<tr><td><b>${h(a.nom)}</b> <span class="secondaire">${h([a.valeur, a.boitier].filter(Boolean).join(" · "))}</span></td>
-        <td>${h(a.emplacement) || "—"}</td><td class="nombre">${a.quantite}</td></tr>`).join("")}</tbody></table>`
-        : '<div class="vide"><b>Aucun article lié</b>Utilisez « Ajouter au stock » pour en créer un.</div>'}</div>
+    <section data-panel="stock" hidden>
+      <div class="card">${items.length ? `<table><thead><tr><th>Article</th><th>Emplacement</th><th class="num">Quantité</th></tr></thead><tbody>
+        ${items.map((i) => `<tr><td><b>${h(i.name)}</b> <span class="muted">${h([i.value, i.package].filter(Boolean).join(" · "))}</span></td>
+        <td>${h(i.location) || "—"}</td><td class="num">${i.quantity}</td></tr>`).join("")}</tbody></table>`
+        : '<div class="empty"><b>Aucun article lié</b>Utilisez « Ajouter au stock » pour en créer un.</div>'}</div>
     </section>`;
 
-  const lien = { survol: () => {} };
-  const promesse3d = vue3D(vue.querySelector("#scene"), fiche, { surSurvol: (c) => lien.survol(c) });
-  Object.assign(lien, relier(vue, fiche, "fiche-schema", promesse3d));
+  const link = { hoverFrom3D: () => {} };
+  const viewerPromise = mountViewer(view.querySelector("#scene"), sheet, { onHover: (k) => link.hoverFrom3D(k) });
+  Object.assign(link, linkPinViews(view, sheet, "sheet-diagram", viewerPromise));
 
-  vue.querySelector(".onglets").addEventListener("click", (e) => {
-    const b = e.target.closest("button[data-onglet]");
-    if (!b) return;
-    vue.querySelectorAll(".onglets button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
-    vue.querySelectorAll("[data-panneau]").forEach((p) => { p.hidden = p.dataset.panneau !== b.dataset.onglet; });
+  view.querySelector(".tabs").addEventListener("click", (e) => {
+    const tab = e.target.closest("button[data-tab]");
+    if (!tab) return;
+    view.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b === tab)));
+    view.querySelectorAll("[data-panel]").forEach((p) => { p.hidden = p.dataset.panel !== tab.dataset.tab; });
   });
-  vue.querySelector("#ajout-stock").addEventListener("click", async () => {
-    const { fiches } = await api("/fiches");
-    dialogueArticle(null, fiches, router, { nom: fiche.nom, categorie: fiche.categorie, fiche: id, quantite: 1 });
+  view.querySelector("#add-to-stock").addEventListener("click", async () => {
+    openItemDialog(null, await fetchSheets(), route, { name: sheet.name, category: sheet.category, sheet: id, quantity: 1 });
   });
 }
 
-// ---------- Éditeur ----------
+// ---------- Editor ----------
 
-async function vueEditeur(id) {
-  const nouvelle = !id;
-  const source = nouvelle ? await api("/fiches/modele-vierge", { brut: true }) : await api(`/fiches/${id}/source`, { brut: true });
-  vue.innerHTML = `
-    <div class="titre-page">
-      <div><div class="surtitre">${nouvelle ? "Nouvelle fiche" : "Modifier"}</div>
-      <h1>${nouvelle ? "Créer une fiche" : `<code>${h(id)}.md</code>`}</h1>
-      <p>En-tête YAML (boîtier, brochage, caractéristiques) puis texte en Markdown. Format détaillé dans <code>docs/format-fiche.md</code>.</p></div>
+async function renderEditor(id) {
+  const isNew = !id;
+  const source = isNew ? await api("/sheets/template", { raw: true }) : await api(`/sheets/${id}/source`, { raw: true });
+  view.innerHTML = `
+    <div class="page-title">
+      <div><div class="eyebrow">${isNew ? "Nouvelle fiche" : "Modifier"}</div>
+      <h1>${isNew ? "Créer une fiche" : `<code>${h(id)}.md</code>`}</h1>
+      <p>En-tête YAML (package, pinout, specs) puis texte en Markdown. Format détaillé dans <code>docs/sheet-format.md</code>.</p></div>
     </div>
-    <div class="editeur-champs">
-      ${nouvelle ? `<label class="champ"><span>Identifiant (nom du fichier)</span><input id="identifiant" placeholder="mon-appareil" pattern="[a-z0-9][a-z0-9-]*"></label>` : ""}
-      <button class="bouton" id="modele" type="button">Joindre un modèle 3D…</button>
-      <input type="file" id="fichier-modele" accept=".glb,.gltf,.stl" hidden>
-      <span class="espace"></span>
-      ${nouvelle ? "" : '<button class="bouton bouton-danger" id="supprimer" type="button">Supprimer</button>'}
-      <a class="bouton" href="${nouvelle ? "#/fiches" : `#/fiche/${h(id)}`}">Annuler</a>
-      <button class="bouton bouton-or" id="enregistrer" type="button">Enregistrer <kbd>Ctrl+S</kbd></button>
+    <div class="editor-bar">
+      ${isNew ? `<label class="field"><span>Identifiant (nom du fichier)</span><input id="sheet-id" placeholder="mon-appareil" pattern="[a-z0-9][a-z0-9-]*"></label>` : ""}
+      <button class="btn" id="attach-model" type="button">Joindre un modèle 3D…</button>
+      <input type="file" id="model-file" accept=".glb,.gltf,.stl" hidden>
+      <span class="spacer"></span>
+      ${isNew ? "" : '<button class="btn btn-danger" id="delete" type="button">Supprimer</button>'}
+      <a class="btn" href="${isNew ? "#/sheets" : `#/sheet/${h(id)}`}">Annuler</a>
+      <button class="btn btn-primary" id="save" type="button">Enregistrer <kbd>Ctrl+S</kbd></button>
     </div>
-    <div class="editeur">
+    <div class="editor">
       <textarea id="source" spellcheck="false" aria-label="Contenu de la fiche">${h(source)}</textarea>
-      <div class="apercu" id="apercu"><div class="secondaire">Aperçu…</div></div>
+      <div class="preview" id="preview"><div class="muted">Aperçu…</div></div>
     </div>`;
-  const zone = vue.querySelector("#source");
-  const apercu = vue.querySelector("#apercu");
-  const champId = vue.querySelector("#identifiant");
-  let idModifie = false;
-  let modifie = false;
-  let v3d = null;
+  const textarea = view.querySelector("#source");
+  const preview = view.querySelector("#preview");
+  const idInput = view.querySelector("#sheet-id");
+  let idEditedByUser = false;
+  let dirty = false;
+  let viewer = null;
 
-  async function rafraichir() {
+  async function refreshPreview() {
     try {
-      const f = await api("/fiches/apercu", { methode: "POST", corps: { source: zone.value } });
-      if (champId && !idModifie) champId.value = slug(f.nom);
-      v3d?.detruire();
-      apercu.innerHTML = `
-        ${f.avertissements.length ? `<div class="avertissements"><b>À vérifier</b><ul>${f.avertissements.map((a) => `<li>${h(a)}</li>`).join("")}</ul></div>` : ""}
-        <div id="apercu-scene"></div>
-        ${blocBrochage(f, "apercu")}`;
-      const lien = { survol: () => {} };
-      const promesse = vue3D(apercu.querySelector("#apercu-scene"), f, { surSurvol: (c) => lien.survol(c) });
-      Object.assign(lien, relier(apercu, f, "apercu-schema", promesse));
-      v3d = await promesse;
+      const sheet = await api("/sheets/preview", { method: "POST", body: { source: textarea.value } });
+      if (idInput && !idEditedByUser) idInput.value = slugify(sheet.name);
+      viewer?.dispose();
+      preview.innerHTML = `${warningsBlock(sheet.warnings, "À vérifier")}<div id="preview-scene"></div>${pinoutSection(sheet, "preview")}`;
+      const link = { hoverFrom3D: () => {} };
+      const viewerPromise = mountViewer(preview.querySelector("#preview-scene"), sheet, { onHover: (k) => link.hoverFrom3D(k) });
+      Object.assign(link, linkPinViews(preview, sheet, "preview-diagram", viewerPromise));
+      viewer = await viewerPromise;
     } catch (err) {
-      v3d?.detruire();
-      v3d = null;
-      apercu.innerHTML = `<div class="erreur-apercu">${h(err.message)}</div>`;
+      viewer?.dispose();
+      viewer = null;
+      preview.innerHTML = `<div class="preview-error">${h(err.message)}</div>`;
     }
   }
-  const rafraichirPlusTard = debounce(rafraichir, 500);
-  await rafraichir();
+  const refreshLater = debounce(refreshPreview, 500);
+  await refreshPreview();
 
-  zone.addEventListener("input", () => { modifie = true; rafraichirPlusTard(); });
-  zone.addEventListener("keydown", (e) => {
+  textarea.addEventListener("input", () => { dirty = true; refreshLater(); });
+  textarea.addEventListener("keydown", (e) => {
     if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
-      zone.setRangeText("  ", zone.selectionStart, zone.selectionEnd, "end");
-      rafraichirPlusTard();
+      textarea.setRangeText("  ", textarea.selectionStart, textarea.selectionEnd, "end");
+      refreshLater();
     }
   });
-  champId?.addEventListener("input", () => { idModifie = true; });
+  idInput?.addEventListener("input", () => { idEditedByUser = true; });
 
-  async function enregistrer() {
+  async function save() {
     try {
-      let f;
-      if (nouvelle) {
-        const ident = champId.value.trim() || undefined;
-        f = await api("/fiches", { methode: "POST", corps: { source: zone.value, id: ident } });
-      } else {
-        f = await api(`/fiches/${id}`, { methode: "PUT", corps: { source: zone.value } });
-      }
-      modifie = false;
-      notifier("Fiche enregistrée.");
-      location.hash = `#/fiche/${f.id}`;
-    } catch (err) { notifier(err.message, true); }
+      const sheet = isNew
+        ? await api("/sheets", { method: "POST", body: { source: textarea.value, id: idInput.value.trim() || undefined } })
+        : await api(`/sheets/${id}`, { method: "PUT", body: { source: textarea.value } });
+      dirty = false;
+      notify("Fiche enregistrée.");
+      location.hash = `#/sheet/${sheet.id}`;
+    } catch (err) { notify(err.message, true); }
   }
-  vue.querySelector("#enregistrer").addEventListener("click", enregistrer);
-  const raccourci = (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); enregistrer(); }
+  view.querySelector("#save").addEventListener("click", save);
+  const onKeydown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
   };
-  document.addEventListener("keydown", raccourci);
-  const avantDepart = (e) => { if (modifie) { e.preventDefault(); e.returnValue = ""; } };
-  window.addEventListener("beforeunload", avantDepart);
-  nettoyage.push(() => {
-    document.removeEventListener("keydown", raccourci);
-    window.removeEventListener("beforeunload", avantDepart);
-    v3d?.detruire();
+  const onBeforeUnload = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } };
+  document.addEventListener("keydown", onKeydown);
+  window.addEventListener("beforeunload", onBeforeUnload);
+  cleanups.push(() => {
+    document.removeEventListener("keydown", onKeydown);
+    window.removeEventListener("beforeunload", onBeforeUnload);
   });
 
-  vue.querySelector("#supprimer")?.addEventListener("click", async () => {
+  view.querySelector("#delete")?.addEventListener("click", async () => {
     if (!confirm(`Supprimer le fichier ${id}.md ? Les articles du stock liés seront conservés.`)) return;
     try {
-      await api(`/fiches/${id}`, { methode: "DELETE" });
-      modifie = false;
-      notifier("Fiche supprimée.");
-      location.hash = "#/fiches";
-    } catch (err) { notifier(err.message, true); }
+      await api(`/sheets/${id}`, { method: "DELETE" });
+      dirty = false;
+      notify("Fiche supprimée.");
+      location.hash = "#/sheets";
+    } catch (err) { notify(err.message, true); }
   });
 
-  const fichierModele = vue.querySelector("#fichier-modele");
-  vue.querySelector("#modele").addEventListener("click", () => fichierModele.click());
-  fichierModele.addEventListener("change", async () => {
-    const f = fichierModele.files[0];
-    if (!f) return;
-    const fd = new FormData();
-    fd.append("fichier", f);
+  const modelInput = view.querySelector("#model-file");
+  view.querySelector("#attach-model").addEventListener("click", () => modelInput.click());
+  modelInput.addEventListener("change", async () => {
+    const file = modelInput.files[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append("file", file);
     try {
-      const { chemin } = await api("/modeles", { methode: "POST", corps: fd });
-      const ligne = `modele3d: ${chemin}`;
-      if (/^modele3d:.*$/m.test(zone.value)) zone.value = zone.value.replace(/^modele3d:.*$/m, ligne);
-      else zone.value = zone.value.replace(/^(---\r?\n[\s\S]*?)(\r?\n---)/, `$1\n${ligne}$2`);
-      modifie = true;
-      notifier(`Modèle enregistré dans fiches/${chemin}.`);
-      rafraichir();
-    } catch (err) { notifier(err.message, true); }
-    fichierModele.value = "";
+      const { path } = await api("/models", { method: "POST", body: form });
+      const line = `model3d: ${path}`;
+      textarea.value = /^model3d:.*$/m.test(textarea.value)
+        ? textarea.value.replace(/^model3d:.*$/m, line)
+        : textarea.value.replace(/^(---\r?\n[\s\S]*?)(\r?\n---)/, `$1\n${line}$2`);
+      dirty = true;
+      notify(`Modèle enregistré dans sheets/${path}.`);
+      refreshPreview();
+    } catch (err) { notify(err.message, true); }
+    modelInput.value = "";
   });
 }
-
-export { TYPES };

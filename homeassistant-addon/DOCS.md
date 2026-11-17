@@ -14,13 +14,13 @@ connectés à Home Assistant y ont accès.
 
 | Contenu | Emplacement |
 |---------|-------------|
-| Fiches (un fichier `.md` par appareil) | `/addon_configs/<id>_promethee/fiches/` |
-| Modèles 3D (`.glb`, `.stl`) | `/addon_configs/<id>_promethee/fiches/modeles/` |
+| Fiches (un fichier `.md` par appareil) | `/addon_configs/<id>_promethee/sheets/` |
+| Modèles 3D (`.glb`, `.stl`) | `/addon_configs/<id>_promethee/sheets/models/` |
 | Base du stock | interne au module, incluse dans les sauvegardes de Home Assistant |
 
 Pour écrire des fiches à la main, ouvrir ce dossier avec le module **Studio Code Server**,
 **File editor** (désactiver *Enforce Basepath*) ou un partage **Samba** (dossier `addon_configs`).
-Partir de `_modele.md`. Une fiche enregistrée apparaît au prochain affichage, sans redémarrage.
+Partir de `_template.md` (format : `docs/sheet-format.md` du dépôt). Une fiche enregistrée apparaît au prochain affichage, sans redémarrage.
 Au premier démarrage, cinq fiches d'exemple sont créées.
 
 ## Capteurs
@@ -29,10 +29,10 @@ Le module publie ces capteurs, mis à jour après chaque modification du stock e
 
 | Entité | Valeur |
 |--------|--------|
-| `sensor.promethee_references` | nombre de références en stock |
-| `sensor.promethee_pieces` | nombre total de pièces |
-| `sensor.promethee_alertes` | articles à réapprovisionner (quantité ≤ seuil) ; l'attribut `articles` les liste |
-| `sensor.promethee_fiches` | nombre de fiches techniques |
+| `sensor.promethee_items` | nombre de références en stock |
+| `sensor.promethee_parts` | nombre total de pièces |
+| `sensor.promethee_low_stock` | articles à réapprovisionner (quantité ≤ seuil) ; l'attribut `items` les liste |
+| `sensor.promethee_sheets` | nombre de fiches techniques |
 
 Ces entités n'ont pas d'identifiant unique : elles ne se renomment pas depuis l'interface,
 mais s'utilisent normalement dans les cartes, les automatisations et l'historique.
@@ -44,7 +44,7 @@ automation:
   - alias: Prométhée — stock bas
     triggers:
       - trigger: state
-        entity_id: sensor.promethee_alertes
+        entity_id: sensor.promethee_low_stock
     conditions:
       - condition: template
         value_template: >
@@ -56,8 +56,8 @@ automation:
           title: Stock électronique
           message: >
             À réapprovisionner :
-            {% for a in state_attr('sensor.promethee_alertes', 'articles') %}
-            - {{ a.nom }} {{ a.valeur }} : {{ a.quantite }} (seuil {{ a.seuil }}, {{ a.emplacement }})
+            {% for a in state_attr('sensor.promethee_low_stock', 'items') %}
+            - {{ a.name }} {{ a.value }} : {{ a.quantity }} (seuil {{ a.threshold }}, {{ a.location }})
             {% endfor %}
 ```
 
@@ -67,9 +67,9 @@ automation:
 type: markdown
 title: À réapprovisionner
 content: >
-  {% set articles = state_attr('sensor.promethee_alertes', 'articles') or [] %}
-  {% for a in articles %}
-  - **{{ a.nom }}** {{ a.valeur }} — {{ a.quantite }} / {{ a.seuil }} · {{ a.emplacement }}
+  {% set items = state_attr('sensor.promethee_low_stock', 'items') or [] %}
+  {% for a in items %}
+  - **{{ a.name }}** {{ a.value }} — {{ a.quantity }} / {{ a.threshold }} · {{ a.location }}
   {% else %}
   Rien à commander.
   {% endfor %}

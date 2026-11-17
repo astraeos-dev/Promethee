@@ -1,15 +1,15 @@
-"""Configuration lue dans l'environnement."""
+"""Settings read from the environment."""
 
 import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-FICHES_DIR = Path(os.environ.get("PROMETHEE_FICHES", BASE_DIR / "fiches")).resolve()
-DATA_DIR = Path(os.environ.get("PROMETHEE_DATA", BASE_DIR / "data")).resolve()
-EXEMPLES_DIR = Path(os.environ.get("PROMETHEE_EXEMPLES", BASE_DIR / "fiches")).resolve()
-DB_PATH = DATA_DIR / "stock.sqlite3"
+SHEETS_DIR = Path(os.environ.get("PROMETHEE_SHEETS_DIR", BASE_DIR / "sheets")).resolve()
+DB_DIR = Path(os.environ.get("PROMETHEE_DB_DIR", BASE_DIR / "db")).resolve()
+EXAMPLES_DIR = Path(os.environ.get("PROMETHEE_EXAMPLES_DIR", BASE_DIR / "sheets")).resolve()
+DB_PATH = DB_DIR / "inventory.sqlite3"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
-# Taille maximale d'un modèle 3D téléversé (octets).
-MODELE_MAX = int(os.environ.get("PROMETHEE_MODELE_MAX", 30 * 1024 * 1024))
+# Maximum size of an uploaded 3D model, in bytes.
+MODEL_MAX_BYTES = int(os.environ.get("PROMETHEE_MODEL_MAX_BYTES", 30 * 1024 * 1024))

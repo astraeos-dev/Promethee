@@ -29,7 +29,7 @@ cartes de développement. Prométhée répond à deux questions : *combien m'en 
 et *comment se branche cet appareil ?*
 
 Le stock vit dans une base SQLite, avec l'historique de chaque entrée et sortie. La documentation
-vit dans des **fichiers texte, un par appareil**, rangés dans le dossier `fiches/` : on les écrit
+vit dans des **fichiers texte, un par appareil**, rangés dans le dossier `sheets/` : on les écrit
 dans n'importe quel éditeur, on les versionne avec Git, on les partage. L'interface les relit à
 chaque affichage et en tire une vue 3D, un schéma de brochage et un tableau des broches, reliés
 entre eux : survoler une broche l'éclaire partout.
@@ -67,8 +67,8 @@ Prérequis : Home Assistant OS ou Supervised, sur aarch64 (Raspberry Pi 4 et 5) 
 2. Installer **Prométhée**, le démarrer et cocher **Afficher dans la barre latérale**.
 
 L'interface s'ouvre dans Home Assistant (Ingress), sans port à ouvrir. Les fiches sont dans
-`/addon_configs/<id>_promethee/fiches/`, accessibles avec Studio Code Server ou Samba. Capteurs,
-exemples d'automatisation et de carte : [promethee/DOCS.md](promethee/DOCS.md).
+`/addon_configs/<id>_promethee/sheets/`, accessibles avec Studio Code Server ou Samba. Capteurs,
+exemples d'automatisation et de carte : [homeassistant-addon/DOCS.md](homeassistant-addon/DOCS.md).
 
 ### Avec Docker Compose
 
@@ -84,8 +84,8 @@ L'interface répond sur <http://localhost:8080>. Deux dossiers du dépôt sont m
 
 | Dossier    | Contenu                                                   |
 |------------|-----------------------------------------------------------|
-| `fiches/`  | un fichier `.md` par appareil, et `modeles/` pour les modèles 3D |
-| `base/`    | la base SQLite du stock (`stock.sqlite3`), à sauvegarder  |
+| `sheets/`  | un fichier `.md` par appareil, et `models/` pour les modèles 3D |
+| `db/`      | la base SQLite du stock (`inventory.sqlite3`), à sauvegarder |
 
 Sous Linux, si votre identifiant n'est pas 1000, lancez `UID=$(id -u) GID=$(id -g) docker compose up -d`
 pour que les fichiers créés vous appartiennent.
@@ -94,7 +94,7 @@ Sans Compose :
 
 ```bash
 docker build -t promethee .
-docker run -d -p 8080:8000 -v promethee-fiches:/donnees/fiches -v promethee-base:/donnees/base promethee
+docker run -d -p 8080:8000 -v promethee-sheets:/var/lib/promethee/sheets -v promethee-db:/var/lib/promethee/db promethee
 ```
 
 Avec un volume vide, les fiches d'exemple sont copiées au premier démarrage.
@@ -109,21 +109,22 @@ docker compose up -d --build  # mettre à jour après un git pull
 
 ### Créer une fiche à la main
 
-Copier `fiches/_modele.md` sous un nouveau nom, par exemple `fiches/relais-5v.md`, le compléter,
+Copier `sheets/_template.md` sous un nouveau nom, par exemple `sheets/relais-5v.md`, le compléter,
 puis recharger la page **Fiches**. Le format complet est décrit dans
-[docs/format-fiche.md](docs/format-fiche.md). Extrait :
+[docs/sheet-format.md](docs/sheet-format.md). Les clés sont en anglais, les valeurs et le texte
+en français. Extrait :
 
 ```yaml
 ---
-nom: NE555
-categorie: Circuit intégré
-boitier: { type: dip, longueur: 10.16, largeur: 7.62, marquage: NE555P }
-brochage:
-  rangees:
-    - cote: gauche
-      broches:
-        - { n: 1, nom: GND, type: masse }
-        - { n: 2, nom: TRIG, type: controle, desc: "Déclenchement sous 1/3 de VCC" }
+name: NE555
+category: Circuit intégré
+package: { type: dip, length: 10.16, width: 7.62, marking: NE555P }
+pinout:
+  rows:
+    - side: left
+      pins:
+        - { n: 1, name: GND, type: ground }
+        - { n: 2, name: TRIG, type: control, description: "Déclenchement sous 1/3 de VCC" }
 ---
 
 ## Montage astable
@@ -136,8 +137,9 @@ ESP32-DevKitC V4, Arduino Nano, NE555, module BME280 et transistor PN2222A.
 
 ### Import CSV
 
-Colonnes reconnues : `id`, `nom`, `categorie`, `valeur`, `boitier`, `fiche`, `quantite`, `seuil`,
-`emplacement`, `fournisseur`, `prix`, `notes`. Séparateur `;`, `,` ou tabulation. Une ligne dont
+Colonnes reconnues : `id`, `name`, `category`, `value`, `package`, `sheet`, `quantity`, `threshold`,
+`location`, `supplier`, `price`, `notes` ; les en-têtes français (`nom`, `quantité`, `seuil`,
+`emplacement`…) sont aussi acceptés. Séparateur `;`, `,` ou tabulation. Une ligne dont
 l'`id` existe met l'article à jour, les autres créent un article.
 
 ### API
@@ -148,9 +150,9 @@ L'API REST est documentée sur <http://localhost:8080/api/docs>.
 
 | Variable             | Défaut             | Rôle                                   |
 |----------------------|--------------------|----------------------------------------|
-| `PROMETHEE_FICHES`   | `/donnees/fiches`  | dossier des fiches                     |
-| `PROMETHEE_DATA`     | `/donnees/base`    | dossier de la base SQLite              |
-| `PROMETHEE_MODELE_MAX` | `31457280`       | taille maximale d'un modèle 3D (octets) |
+| `PROMETHEE_SHEETS_DIR` | `/var/lib/promethee/sheets` | dossier des fiches                     |
+| `PROMETHEE_DB_DIR`   | `/var/lib/promethee/db` | dossier de la base SQLite              |
+| `PROMETHEE_MODEL_MAX_BYTES` | `31457280`  | taille maximale d'un modèle 3D (octets) |
 | `PROMETHEE_HA_URL`   | —                  | Home Assistant à informer, ex. `http://192.168.1.10:8123` |
 | `PROMETHEE_HA_TOKEN` | —                  | jeton d'accès longue durée (profil Home Assistant › Sécurité) |
 | `PROMETHEE_HA`       | activé             | `off` pour ne publier aucun capteur |
@@ -177,11 +179,13 @@ uvicorn app.main:app --reload            # http://localhost:8000
 ```
 
 Structure : `app/` (API FastAPI, stock SQLite, lecture des fiches, capteurs Home Assistant), `app/static/` (interface en
-JavaScript sans framework), `fiches/` (fiches d'exemple), `promethee/` (module Home Assistant), `tests/`.
+JavaScript sans framework), `sheets/` (fiches d'exemple), `homeassistant-addon/` (module Home Assistant), `tests/`.
+Le code (identifiants, commentaires, API, base de données) est en anglais ; l'interface et la
+documentation sont en français.
 
 L'image `ghcr.io/astraeos-dev/promethee` (amd64 et arm64) est publiée à chaque poussée sur `main`
 par [.github/workflows/image.yml](.github/workflows/image.yml). Pour une nouvelle version, changer
-`app/__init__.py` et `promethee/config.yaml` ensemble : un test le vérifie.
+`app/__init__.py` et `homeassistant-addon/config.yaml` ensemble : un test le vérifie.
 
 ## Sources et crédits
 

@@ -1,7 +1,7 @@
 name: Image
 
-# Publie l'image multi-architecture utilisée par le module Home Assistant
-# (et par Docker Compose) : ghcr.io/astraeos-dev/promethee:<version> et :latest.
+# Publish the multi-arch image used by the Home Assistant add-on
+# (and Docker Compose): ghcr.io/astraeos-dev/promethee:<version> and :latest.
 on:
   push:
     branches: [main]
@@ -13,7 +13,7 @@ permissions:
   packages: write
 
 jobs:
-  publier:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
         id: version
         run: |
           version=$(python3 -c "import re;print(re.search(r'__version__ = \"(.+)\"', open('app/__init__.py').read())[1])")
-          grep -q "^version: \"$version\"" promethee/config.yaml || { echo "promethee/config.yaml n'est pas en version $version"; exit 1; }
+          grep -q "^version: \"$version\"" homeassistant-addon/config.yaml || { echo "homeassistant-addon/config.yaml is not at version $version"; exit 1; }
           echo "version=$version" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3

@@ -1,16 +1,16 @@
-# docker compose up -d   puis http://localhost:8080
+# docker compose up -d, then open http://localhost:8080
 services:
   promethee:
     build: .
-    image: promethee:latest
+    image: ghcr.io/astraeos-dev/promethee:latest
     container_name: promethee
     restart: unless-stopped
     ports:
       - "8080:8000"
-    # Les fichiers créés dans ./fiches et ./base appartiendront à cet utilisateur.
+    # Files created in ./sheets and ./db will belong to this user.
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
-      - ./fiches:/donnees/fiches   # un fichier .md par appareil, modifiable à la main
-      - ./base:/donnees/base       # base SQLite du stock
+      - ./sheets:/var/lib/promethee/sheets   # one .md file per device, editable by hand
+      - ./db:/var/lib/promethee/db           # SQLite inventory database
     environment:
       TZ: Europe/Paris

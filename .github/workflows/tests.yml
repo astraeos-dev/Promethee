@@ -26,8 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -t promethee:ci .
-      - name: Démarrage du conteneur
+      - name: Container starts
         run: |
           docker run -d --name promethee -p 8000:8000 promethee:ci
-          for i in $(seq 1 20); do curl -fs localhost:8000/api/sante && exit 0; sleep 1; done
+          for i in $(seq 1 20); do curl -fs localhost:8000/api/health && exit 0; sleep 1; done
           docker logs promethee; exit 1

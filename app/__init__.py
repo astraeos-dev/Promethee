@@ -1,3 +1,3 @@
-"""Prométhée : gestion de stock de composants électroniques et fiches techniques."""
+"""Promethee: electronic component inventory and device sheets with a 3D view."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

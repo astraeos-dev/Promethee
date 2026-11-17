@@ -3,10 +3,12 @@
 .venv
 venv
 data
+db
 base
 tests
 docs
+assets
+homeassistant-addon
 **/__pycache__
 *.md
-!fiches/*.md
-promethee
+!sheets/*.md
