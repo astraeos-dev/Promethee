@@ -1,0 +1,16 @@
+# docker compose up -d   puis http://localhost:8080
+services:
+  promethee:
+    build: .
+    image: promethee:latest
+    container_name: promethee
+    restart: unless-stopped
+    ports:
+      - "8080:8000"
+    # Les fichiers créés dans ./fiches et ./base appartiendront à cet utilisateur.
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./fiches:/donnees/fiches   # un fichier .md par appareil, modifiable à la main
+      - ./base:/donnees/base       # base SQLite du stock
+    environment:
+      TZ: Europe/Paris
