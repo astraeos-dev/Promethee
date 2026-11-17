@@ -147,6 +147,28 @@ Pour ajouter un modèle KiCad : ajouter son fichier STEP dans `tools/parts.yaml`
 `python tools/build_models.py`. Un modèle STEP de fabricant peut aussi y être ajouté si sa
 licence permet de le redistribuer.
 
+## Liste de matériel (demandes)
+
+`sheets/catalog.yaml` liste du matériel courant, sans fiche : la page **Demander une fiche**
+l'affiche, et chaque appareil ouvre le formulaire GitHub `fiche.yml` déjà rempli (les paramètres
+de l'adresse portent les identifiants des champs du formulaire).
+
+```yaml
+devices:
+  - id: arduino-uno-r3            # identifiant de la future fiche : sheets/arduino-uno-r3.md
+    name: Arduino Uno R3
+    category: Carte de développement
+    manufacturer: Arduino
+    part_number: A000066
+    description: Carte ATmega328P en 5 V, la référence pour débuter.
+    dimensions: 68,6 × 53,4 mm     # facultatif
+    links: [https://docs.arduino.cc/hardware/uno-rev3/]
+```
+
+Quand une fiche porte le même identifiant qu'un appareil de la liste, la page affiche
+« Fiche disponible » et renvoie vers elle. Les liens de la liste et des fiches sont vérifiés par
+`python tools/check_links.py` (workflow **Links**, chaque semaine et à chaque modification).
+
 ## Pièges du YAML
 
 - Mettre entre guillemets les couleurs (`"#1d5c3a"`) et les textes qui contiennent `:` ou `#`.

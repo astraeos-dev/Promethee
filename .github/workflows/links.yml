@@ -1,0 +1,30 @@
+name: Links
+
+# Checks that the datasheet and documentation links of the hardware catalog and
+# of the sheets still answer. Informational: a dead link is reported as a warning
+# and in the job summary, it does not fail the build (some manufacturers refuse
+# automated requests).
+on:
+  push:
+    paths: ["sheets/**", "tools/check_links.py", ".github/workflows/links.yml"]
+  pull_request:
+    paths: ["sheets/**", "tools/check_links.py", ".github/workflows/links.yml"]
+  schedule:
+    - cron: "17 5 * * 1"   # every Monday, to notice links that disappear
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - run: python tools/check_links.py

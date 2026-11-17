@@ -261,3 +261,9 @@ dialog h2 { margin-bottom: 16px; }
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Sheet requests ---------- */
+.catalog-card { cursor: default; }
+.catalog-card:hover { transform: none; }
+.catalog-card .muted { font-size: .82rem; }
+.catalog-card .footer { margin-top: 4px; }
