@@ -112,7 +112,7 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
         except FileNotFoundError:
             raise HTTPException(404, "Fiche introuvable.") from None
 
-    @app.get("/api/models/{name:path}")
+    @app.api_route("/api/models/{name:path}", methods=["GET", "HEAD"])
     def get_model(name: str) -> FileResponse:
         try:
             path = library.model_path(name)

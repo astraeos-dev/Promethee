@@ -29,6 +29,7 @@ def test_bundled_sheets_and_models_are_served():
         assert response.status_code == 200
         assert response.headers["content-type"] == "model/gltf-binary"
         assert response.content[:4] == b"glTF"
+        assert client.head(f"/api/{model}").status_code == 200
 
 
 def test_inventory_lifecycle(client):
