@@ -1,0 +1,11 @@
+[project]
+name = "promethee"
+version = "0.1.0"
+description = "Stock de composants électroniques et fiches techniques avec vue 3D."
+requires-python = ">=3.11"
+license = "MIT"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
