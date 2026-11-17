@@ -1,5 +1,11 @@
 # Journal des modifications
 
+## 0.5.1
+
+- Liste de matériel : liens corrigés vers les fiches techniques de l'ESP32-S3-DevKitC-1, du
+  HC-SR501, du MPU-6050, du SG90, de l'ULN2803A et du 2N7000 ; tous les liens de la liste
+  répondent.
+
 ## 0.5.0
 
 - **Demander une fiche** : liste de matériel courant (une soixantaine d'appareils : cartes,
