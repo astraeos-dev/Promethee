@@ -1,6 +1,10 @@
 # Prométhée : stock de composants et fiches techniques en 3D.
 FROM python:3.13-slim
 
+LABEL org.opencontainers.image.source="https://github.com/astraeos-dev/Promethee" \
+      org.opencontainers.image.description="Stock de composants électroniques et fiches techniques en 3D" \
+      org.opencontainers.image.licenses="MIT"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -16,10 +20,10 @@ COPY app ./app
 # Fiches d'exemple, copiées dans /donnees/fiches au premier démarrage si le dossier est vide.
 COPY fiches ./exemples
 
+COPY docker-entrypoint.sh /usr/local/bin/
 RUN useradd --uid 1000 --create-home promethee \
  && mkdir -p /donnees/fiches /donnees/base \
  && chown -R promethee:promethee /donnees
-USER promethee
 
 VOLUME ["/donnees/fiches", "/donnees/base"]
 EXPOSE 8000
@@ -27,4 +31,5 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
   CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/sante', timeout=4)"
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
