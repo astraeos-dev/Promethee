@@ -56,7 +56,7 @@ def test_publish_posts_each_state(monkeypatch):
 def test_changes_trigger_publication(tmp_path):
     publisher = Publisher(lambda: {}, None)
     with TestClient(create_app(tmp_path / "s", tmp_path / "db.sqlite3", publisher=publisher)) as client:
-        client.post("/api/sheets/preview", json={"source": "---\nname: x\n---\n"})
+        client.get("/api/items")
         assert not publisher._changed.is_set()
         client.post("/api/items", json={"name": "LED"})
         assert publisher._changed.is_set()

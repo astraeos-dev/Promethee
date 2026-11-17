@@ -1,6 +1,6 @@
 ---
-# Modèle de fiche Prométhée. Copier ce fichier sous le nom <identifiant>.md
-# (minuscules, chiffres et tirets), puis le compléter. Format : docs/sheet-format.md
+# Modèle de fiche Prométhée, pour préparer une fiche livrée avec l'application.
+# Copier sous le nom <identifiant>.md (minuscules, chiffres et tirets). Format : docs/sheet-format.md
 name: Nouvel appareil
 category: Divers
 manufacturer: ""
@@ -17,7 +17,7 @@ links:
   - title: Fiche technique (datasheet)
     url: https://exemple.org/datasheet.pdf
 
-# Vue 3D générée à partir du boîtier et du brochage.
+# Boîtier : circuit imprimé ou corps du composant.
 # type : board | module | dip | to92. Dimensions en millimètres, vue de dessus :
 # width est horizontale, length verticale.
 package:
@@ -26,10 +26,6 @@ package:
   width: 20
   thickness: 1.6
   color: "#1d5c3a"
-
-# Pour remplacer la vue générée par un vrai modèle (.glb, .gltf ou .stl),
-# déposer le fichier dans sheets/models/ et indiquer son nom ici.
-# model3d: models/mon-appareil.glb
 
 pinout:
   pitch: 2.54
@@ -44,9 +40,10 @@ pinout:
 # Types de broche : power, ground, gpio, analog, pwm, i2c, spi, uart,
 # control, reserved, nc, other.
 
-# Composants visibles sur la carte (facultatif). x et y : centre, depuis le coin haut gauche.
-components:
-  - { name: Puce, x: 12, y: 15, width: 6, length: 6, height: 1, label: "IC" }
+# Vrais modèles 3D (sheets/models, voir tools/models.yaml). x et y : centre, depuis le coin haut gauche.
+parts:
+  - { name: Barrette, model: models/pin-header-1x04.glb, x: 1.27, y: 20, side: bottom }
+  - { name: Puce, model: models/sot-23-5.glb, x: 12, y: 15, label: "IC" }
 ---
 
 ## Présentation

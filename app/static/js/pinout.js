@@ -61,6 +61,30 @@ export function createPinoutDiagram(container, sheet, { onHover = () => {} } = {
     svg += "</g>";
   }
 
+  // Real parts seen from above (sizes come from sheets/models/index.json).
+  // On a DIP or TO-92 the part is the package itself, already drawn.
+  if (pkg.type === "board" || pkg.type === "module") {
+    for (const part of sheet.parts || []) {
+      if (!part.size || part.side === "bottom") continue;
+      const quarterTurn = Math.round(part.rotation / 90) % 2 !== 0;
+      const turned = Math.abs(part.rotation % 90) > 1; // e.g. a QFP set at 45°
+      const [sx, , sz] = part.size;
+      const w = (quarterTurn ? sz : sx) * scale, l = (quarterTurn ? sx : sz) * scale;
+      const cx = X(part.x), cy = Y(part.y);
+      const transform = turned ? `transform="rotate(${-part.rotation} ${cx} ${cy})"` : "";
+      svg += `<g opacity=".95"><title>${h(part.name)}</title>`;
+      svg += `<rect x="${cx - w / 2}" y="${cy - l / 2}" width="${w}" height="${l}" rx="1.5" fill="${part.color}" stroke="rgba(0,0,0,.45)" ${transform}/>`;
+      if (part.label) {
+        const vertical = l > w * 1.4 && !turned;
+        const size = Math.min(12, ((vertical ? l : w) * 0.85) / (part.label.length * 0.62), (vertical ? w : l) * 0.35);
+        if (size >= 5) {
+          svg += `<text x="${cx}" y="${cy}" fill="${isLightColor(part.color) ? "#4a4e57" : "#d5d8de"}" font-size="${size}" font-weight="600" text-anchor="middle" dominant-baseline="middle" ${vertical ? `transform="rotate(90 ${cx} ${cy})"` : ""}>${h(part.label)}</text>`;
+        }
+      }
+      svg += "</g>";
+    }
+  }
+
   // Pins and their labels
   for (const p of positions) {
     const type = pinType(p.pin.type);

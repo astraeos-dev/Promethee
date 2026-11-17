@@ -1,0 +1,32 @@
+name: Signaler un problème
+description: Quelque chose ne fonctionne pas dans Prométhée.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Ce qui se passe
+      description: Ce que vous avez fait, ce que vous attendiez, ce qui s'est passé.
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: Installation
+      options:
+        - Module complémentaire Home Assistant
+        - Docker Compose
+        - Autre
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Affichée dans Home Assistant, ou sur /api/health.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Journaux
+      description: Onglet Journal du module, ou docker compose logs.
+      render: text

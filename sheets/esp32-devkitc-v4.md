@@ -78,13 +78,22 @@ pinout:
         - { n: 18, name: SD0, type: reserved, functions: [GPIO7], description: "Reliée à la flash SPI : ne pas utiliser" }
         - { n: 19, name: CLK, type: reserved, functions: [GPIO6], description: "Reliée à la flash SPI : ne pas utiliser" }
 
-components:
-  - { name: Module ESP32-WROOM-32E, x: 13.95, y: 12.2, width: 18, length: 25.5, height: 3.1, color: "#b9bec6", label: "ESP32-WROOM-32E" }
-  - { name: Pont USB-série CP2102N, x: 13.95, y: 38.5, width: 4, length: 4, height: 0.9, color: "#202227", label: "CP2102N" }
-  - { name: Régulateur AMS1117, x: 13.95, y: 31.5, width: 6.5, length: 3.5, height: 1.6, color: "#202227", label: "AMS1117" }
-  - { name: Bouton EN, x: 6.5, y: 49.5, width: 3.5, length: 4.5, height: 1.8, color: "#d9dbe0" }
-  - { name: Bouton BOOT, x: 21.4, y: 49.5, width: 3.5, length: 4.5, height: 1.8, color: "#d9dbe0" }
-  - { name: Connecteur micro-USB, x: 13.95, y: 52.6, width: 7.6, length: 5.4, height: 2.7, color: "#c8ccd2" }
+# Vrais modèles 3D (sheets/models, bibliothèque KiCad), placés par leur centre.
+parts:
+  - { name: Module ESP32-WROOM-32E, model: models/esp32-wroom-32e.glb, x: 13.95, y: 12.75, color: "#c8ccd2", label: "ESP32-WROOM-32E" }
+  - { name: Barrette J2, model: models/pin-header-1x19.glb, x: 1.27, y: 27.46, side: bottom }
+  - { name: Barrette J3, model: models/pin-header-1x19.glb, x: 26.63, y: 27.46, side: bottom }
+  - { name: Connecteur micro-USB, model: models/usb-micro-b.glb, x: 13.95, y: 52.2, color: "#c8ccd2" }
+  - { name: Pont USB-série CP2102N, model: models/qfn-28-5x5.glb, x: 19.5, y: 38 }
+  - { name: Régulateur AMS1117, model: models/sot-223.glb, x: 8, y: 41 }
+  - { name: Bouton EN, model: models/button-kmr2.glb, x: 5.4, y: 50.3, rotation: 90, color: "#c8ccd2" }
+  - { name: Bouton BOOT, model: models/button-kmr2.glb, x: 22.5, y: 50.3, rotation: 90, color: "#c8ccd2" }
+  - { name: LED d'alimentation, model: models/led-0603.glb, x: 21.5, y: 31.5 }
+  - { name: Résistance de la LED, model: models/r-0603.glb, x: 21.5, y: 33.5 }
+  - { name: Condensateur, model: models/c-0603.glb, x: 13.95, y: 30.5 }
+  - { name: Condensateur, model: models/c-0603.glb, x: 14.5, y: 38, rotation: 90 }
+  - { name: Condensateur d'entrée, model: models/c-0805.glb, x: 8, y: 46 }
+  - { name: Condensateur de sortie, model: models/c-0805.glb, x: 8, y: 35.5 }
 ---
 
 ## Présentation

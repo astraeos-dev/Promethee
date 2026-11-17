@@ -4,29 +4,24 @@ from __future__ import annotations
 
 import html
 import re
-import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__, config
 from .home_assistant import Publisher, sensor_states
 from .inventory import Inventory, InventoryError
-from .sheets import SheetError, SheetLibrary, check_id, parse, slugify
+from .sheets import SheetError, SheetLibrary, check_id
 
 INGRESS_PATH_RE = re.compile(r"(/[A-Za-z0-9._~-]+)*")
-# Requests that change the inventory or the sheets, and so the sensors.
-MUTATING_PREFIXES = ("/api/items", "/api/import", "/api/sheets")
-
-
-class SheetSource(BaseModel):
-    source: str = Field(max_length=500_000)
-    id: str | None = None
+# Requests that change the inventory, and so the sensors.
+MUTATING_PREFIXES = ("/api/items", "/api/import")
+MODEL_CACHE_SECONDS = 24 * 3600
 
 
 class ItemIn(BaseModel):
@@ -48,19 +43,6 @@ class MovementIn(BaseModel):
     reason: str = ""
 
 
-def seed_sheets(directory: Path, examples: Path) -> None:
-    """Copy the example sheets into a sheets directory that is still empty."""
-    if directory == examples or not examples.is_dir():
-        return
-    directory.mkdir(parents=True, exist_ok=True)
-    if any(directory.glob("*.md")):
-        return
-    for sheet in examples.glob("*.md"):
-        shutil.copy2(sheet, directory / sheet.name)
-    if (examples / "models").is_dir():
-        shutil.copytree(examples / "models", directory / "models", dirs_exist_ok=True)
-
-
 def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
                publisher: Publisher | None = None) -> FastAPI:
     sheets_dir = sheets_dir or config.SHEETS_DIR
@@ -76,7 +58,6 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        seed_sheets(sheets_dir, config.EXAMPLES_DIR)
         publisher.start()
         yield
         publisher.stop()
@@ -94,8 +75,7 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
     async def publish_on_change(request: Request, call_next):
         response = await call_next(request)
         path = request.url.path
-        if (request.method != "GET" and response.status_code < 400
-                and path.startswith(MUTATING_PREFIXES) and not path.endswith("/preview")):
+        if request.method != "GET" and response.status_code < 400 and path.startswith(MUTATING_PREFIXES):
             publisher.notify_change()
         return response
 
@@ -104,6 +84,10 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
     @app.get("/api/health")
     def health() -> dict[str, Any]:
         return {"status": "ok", "version": __version__}
+
+    @app.get("/api/about")
+    def about() -> dict[str, Any]:
+        return {"version": __version__, "repository": config.REPOSITORY_URL}
 
     @app.get("/api/summary")
     def summary() -> dict[str, Any]:
@@ -121,51 +105,12 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
         sheets, errors = library.list()
         return {"sheets": [s.summary() for s in sheets], "errors": errors}
 
-    @app.get("/api/sheets/template", response_class=PlainTextResponse)
-    def sheet_template() -> str:
-        for path in (sheets_dir / "_template.md", config.EXAMPLES_DIR / "_template.md"):
-            if path.is_file():
-                return path.read_text(encoding="utf-8")
-        return "---\nname: Nouvel appareil\n---\n"
-
-    @app.post("/api/sheets/preview")
-    def preview_sheet(body: SheetSource) -> dict[str, Any]:
-        return parse(body.id or "preview", body.source).full()
-
     @app.get("/api/sheets/{sheet_id}")
     def get_sheet(sheet_id: str) -> dict[str, Any]:
         try:
             return library.get(check_id(sheet_id)).full()
         except FileNotFoundError:
             raise HTTPException(404, "Fiche introuvable.") from None
-
-    @app.get("/api/sheets/{sheet_id}/source", response_class=PlainTextResponse)
-    def sheet_source(sheet_id: str) -> str:
-        try:
-            return library.source(sheet_id)
-        except FileNotFoundError:
-            raise HTTPException(404, "Fiche introuvable.") from None
-
-    @app.post("/api/sheets", status_code=201)
-    def create_sheet(body: SheetSource) -> dict[str, Any]:
-        sheet_id = body.id or slugify(parse("new", body.source).meta["name"])
-        if library.exists(sheet_id):
-            raise HTTPException(409, f"Une fiche « {sheet_id} » existe déjà.")
-        return library.write(sheet_id, body.source).full()
-
-    @app.put("/api/sheets/{sheet_id}")
-    def update_sheet(sheet_id: str, body: SheetSource) -> dict[str, Any]:
-        if not library.exists(sheet_id):
-            raise HTTPException(404, "Fiche introuvable.")
-        return library.write(sheet_id, body.source).full()
-
-    @app.delete("/api/sheets/{sheet_id}", status_code=204)
-    def delete_sheet(sheet_id: str) -> Response:
-        try:
-            library.delete(sheet_id)
-        except FileNotFoundError:
-            raise HTTPException(404, "Fiche introuvable.") from None
-        return Response(status_code=204)
 
     @app.get("/api/models/{name:path}")
     def get_model(name: str) -> FileResponse:
@@ -175,14 +120,8 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
             raise HTTPException(404, "Modèle introuvable.") from None
         if not path.is_file():
             raise HTTPException(404, "Modèle introuvable.")
-        return FileResponse(path)
-
-    @app.post("/api/models", status_code=201)
-    async def upload_model(file: UploadFile = File(...)) -> dict[str, str]:
-        content = await file.read(config.MODEL_MAX_BYTES + 1)
-        if len(content) > config.MODEL_MAX_BYTES:
-            raise HTTPException(413, "Fichier trop volumineux.")
-        return {"path": library.save_model(file.filename or "model.glb", content)}
+        return FileResponse(path, media_type="model/gltf-binary",
+                            headers={"Cache-Control": f"public, max-age={MODEL_CACHE_SECONDS}"})
 
     # ---------- Inventory ----------
 

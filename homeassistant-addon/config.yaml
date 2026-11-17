@@ -1,5 +1,5 @@
 name: Prométhée
-version: "0.3.0"
+version: "0.4.0"
 slug: promethee
 description: Stock de composants électroniques et fiches techniques avec vue 3D.
 url: https://github.com/astraeos-dev/Promethee
@@ -17,10 +17,7 @@ panel_icon: mdi:chip
 panel_title: Prométhée
 homeassistant_api: true
 watchdog: http://[HOST]:[PORT:8000]/api/health
-map:
-  - addon_config:rw
 environment:
-  PROMETHEE_SHEETS_DIR: /config/sheets
   PROMETHEE_DB_DIR: /data
 ports:
   8000/tcp: null

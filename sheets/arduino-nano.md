@@ -70,12 +70,23 @@ pinout:
         - { n: 2, name: RX0, type: uart, functions: [D0], description: "Partagée avec le port USB" }
         - { n: 1, name: TX1, type: uart, functions: [D1], description: "Partagée avec le port USB" }
 
-components:
-  - { name: Connecteur mini-USB, x: 9, y: 2.6, width: 7.7, length: 7.2, height: 3.9, color: "#c8ccd2" }
-  - { name: Microcontrôleur ATmega328P, x: 9, y: 25, width: 7, length: 7, height: 1.2, color: "#202227", label: "ATMEGA328P" }
-  - { name: Bouton reset, x: 9, y: 13.5, width: 3.5, length: 6, height: 2.2, color: "#d9dbe0" }
-  - { name: Quartz 16 MHz, x: 9, y: 34, width: 3.2, length: 5, height: 1, color: "#c8ccd2" }
-  - { name: Connecteur ICSP, x: 9, y: 41.5, width: 7.6, length: 5.1, height: 1, color: "#202227" }
+# Vrais modèles 3D (sheets/models, bibliothèque KiCad), placés par leur centre.
+parts:
+  - { name: Connecteur mini-USB, model: models/usb-mini-b.glb, x: 9, y: 3.5, color: "#c8ccd2" }
+  - { name: Barrette J1, model: models/pin-header-1x15.glb, x: 1.38, y: 22.48, side: bottom }
+  - { name: Barrette J2, model: models/pin-header-1x15.glb, x: 16.62, y: 22.48, side: bottom }
+  - { name: Microcontrôleur ATmega328P, model: models/tqfp-32.glb, x: 9, y: 26.5, rotation: 45, label: "ATMEGA328P" }
+  - { name: Bouton reset, model: models/button-kmr2.glb, x: 9, y: 14.5, color: "#c8ccd2" }
+  - { name: Quartz 16 MHz, model: models/crystal-3225.glb, x: 9, y: 34.5 }
+  - { name: LED L, model: models/led-0805.glb, x: 5.6, y: 31, rotation: 90 }
+  - { name: LED PWR, model: models/led-0805.glb, x: 12.4, y: 31, rotation: 90 }
+  - { name: LED TX, model: models/led-0805.glb, x: 5.6, y: 35, rotation: 90 }
+  - { name: LED RX, model: models/led-0805.glb, x: 12.4, y: 35, rotation: 90 }
+  - { name: Condensateur, model: models/c-0805.glb, x: 6, y: 19.5, rotation: 90 }
+  - { name: Condensateur, model: models/c-0805.glb, x: 12, y: 19.5, rotation: 90 }
+  - { name: Résistance, model: models/r-0603.glb, x: 9, y: 39 }
+  - { name: Pont USB-série FT232RL, model: models/ssop-28.glb, x: 9, y: 22, side: bottom }
+  - { name: Régulateur 5 V, model: models/sot-223.glb, x: 9, y: 37, side: bottom }
 ---
 
 ## Présentation

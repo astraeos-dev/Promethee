@@ -1,17 +1,17 @@
 """Device sheets: one Markdown file with a YAML front matter per device.
 
-The format is described in docs/sheet-format.md. Files whose name starts
-with "_" (such as the blank template) are not listed.
+Sheets ship with the application (sheets/ directory) and are read-only at
+runtime; new sheets are requested through GitHub issues and added in
+releases. The format is described in docs/sheet-format.md. Files whose
+name starts with "_" (such as the blank template) are not listed.
 
 Messages returned to the user (errors, warnings) are in French, like the UI.
 """
 
 from __future__ import annotations
 
-import os
+import json
 import re
-import tempfile
-import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -29,7 +29,8 @@ PIN_TYPES = {
 }
 PACKAGE_TYPES = {"board", "module", "dip", "to92"}
 SIDES = {"left", "right", "top", "bottom"}
-MODEL_EXTENSIONS = {".glb", ".gltf", ".stl"}
+MODEL_EXTENSIONS = {".glb"}
+SIDES_OF_BOARD = {"top", "bottom"}
 
 # Default size (length, width, thickness in mm) and color per package type.
 PACKAGE_DEFAULTS = {
@@ -82,7 +83,7 @@ class Sheet:
             "description": m["description"],
             "tags": m["tags"],
             "pin_count": sum(len(r["pins"]) for r in m["pinout"]["rows"]),
-            "has_model3d": bool(m["model3d"]),
+            "has_parts": bool(m["parts"]),
         }
 
     def full(self) -> dict[str, Any]:
@@ -222,6 +223,35 @@ def _normalize_components(raw: Any, warnings: list[str]) -> list[dict[str, Any]]
     return components
 
 
+def _normalize_parts(raw: Any, warnings: list[str]) -> list[dict[str, Any]]:
+    """Real 3D models (sheets/models/*.glb) placed on the device."""
+    parts = []
+    for i, part in enumerate(raw or []):
+        if not isinstance(part, dict):
+            warnings.append(f"parts[{i}] ignoré : ce doit être un objet.")
+            continue
+        model = _text(part.get("model"))
+        if Path(model).suffix.lower() not in MODEL_EXTENSIONS or ".." in model:
+            warnings.append(f"parts[{i}].model : « {model} » doit être un fichier .glb du dossier models/.")
+            continue
+        side = _text(part.get("side")).lower() or "top"
+        if side not in SIDES_OF_BOARD:
+            warnings.append(f"parts[{i}].side : « {side} » inconnu (top ou bottom), « top » utilisé.")
+            side = "top"
+        parts.append({
+            "name": _text(part.get("name")),
+            "model": model,
+            "x": _optional_float(part.get("x")) or 0.0,
+            "y": _optional_float(part.get("y")) or 0.0,
+            "z": _optional_float(part.get("z")) or 0.0,
+            "rotation": _optional_float(part.get("rotation")) or 0.0,
+            "side": side,
+            "color": _color(part.get("color"), "#2a2d34", f"parts[{i}].color", warnings),
+            "label": _text(part.get("label")),
+        })
+    return parts
+
+
 def normalize(meta: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
     """Validate the front matter and fill in defaults."""
     warnings: list[str] = []
@@ -242,10 +272,6 @@ def normalize(meta: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
         {"title": _text(link.get("title")) or _text(link.get("url")), "url": _text(link.get("url"))}
         for link in links if isinstance(link, dict) and _text(link.get("url"))
     ]
-    model3d = _text(meta.get("model3d"))
-    if model3d and Path(model3d).suffix.lower() not in MODEL_EXTENSIONS:
-        warnings.append(f"model3d : format non pris en charge ({', '.join(sorted(MODEL_EXTENSIONS))}).")
-        model3d = ""
     package = _normalize_package(meta.get("package"), warnings)
     return {
         "name": name,
@@ -256,10 +282,10 @@ def normalize(meta: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
         "tags": [_text(t) for t in tags if _text(t)],
         "specs": {_text(k): _text(v) for k, v in specs.items()},
         "links": links,
-        "model3d": model3d,
         "package": package,
         "pinout": _normalize_pinout(meta.get("pinout"), package, warnings),
         "components": _normalize_components(meta.get("components"), warnings),
+        "parts": _normalize_parts(meta.get("parts"), warnings),
     }, warnings
 
 
@@ -275,13 +301,8 @@ def check_id(sheet_id: str) -> str:
     return sheet_id
 
 
-def slugify(text: str) -> str:
-    ascii_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode().lower()
-    return re.sub(r"[^a-z0-9]+", "-", ascii_text).strip("-")[:64] or "sheet"
-
-
 class SheetLibrary:
-    """Access to the sheets directory. Files changed on disk are re-read on each call."""
+    """Read-only access to the sheets directory, re-read when files change."""
 
     def __init__(self, directory: Path):
         self.directory = directory
@@ -290,6 +311,14 @@ class SheetLibrary:
     @property
     def models_dir(self) -> Path:
         return self.directory / "models"
+
+    def model_sizes(self) -> dict[str, list[float]]:
+        """Bounding box size (x, height, z in mm) of each model, written by tools/build_models.py."""
+        index = self.models_dir / "index.json"
+        try:
+            return json.loads(index.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {}
 
     def path(self, sheet_id: str) -> Path:
         return self.directory / f"{check_id(sheet_id)}.md"
@@ -306,8 +335,18 @@ class SheetLibrary:
             result = exc
         except UnicodeDecodeError as exc:
             result = SheetError(f"Encodage invalide : {exc}")
+        if isinstance(result, Sheet):
+            self._attach_model_sizes(result)
         self._cache[sheet_id] = (mtime, result)
         return result
+
+    def _attach_model_sizes(self, sheet: Sheet) -> None:
+        sizes = self.model_sizes()
+        for part in sheet.meta["parts"]:
+            name = Path(part["model"]).stem
+            if not (self.models_dir / f"{name}.glb").is_file():
+                sheet.warnings.append(f"Modèle 3D introuvable : {part['model']}.")
+            part["size"] = sizes.get(name)
 
     def list(self) -> tuple[list[Sheet], list[dict[str, str]]]:
         sheets, errors = [], []
@@ -333,29 +372,6 @@ class SheetLibrary:
             raise result
         return result
 
-    def source(self, sheet_id: str) -> str:
-        path = self.path(sheet_id)
-        if not path.is_file():
-            raise FileNotFoundError(sheet_id)
-        return path.read_text(encoding="utf-8")
-
-    def exists(self, sheet_id: str) -> bool:
-        return self.path(sheet_id).is_file()
-
-    def write(self, sheet_id: str, source: str) -> Sheet:
-        sheet = parse(check_id(sheet_id), source)  # never write an invalid sheet
-        self.directory.mkdir(parents=True, exist_ok=True)
-        _atomic_write(self.path(sheet_id), source.replace("\r\n", "\n").encode("utf-8"))
-        self._cache.pop(sheet_id, None)
-        return sheet
-
-    def delete(self, sheet_id: str) -> None:
-        path = self.path(sheet_id)
-        if not path.is_file():
-            raise FileNotFoundError(sheet_id)
-        path.unlink()
-        self._cache.pop(sheet_id, None)
-
     def model_path(self, name: str) -> Path:
         """Resolve a 3D model path, refusing anything outside the models/ directory."""
         name = name.removeprefix("models/")
@@ -363,24 +379,3 @@ class SheetLibrary:
         if self.models_dir.resolve() not in path.parents or path.suffix.lower() not in MODEL_EXTENSIONS:
             raise FileNotFoundError(name)
         return path
-
-    def save_model(self, filename: str, content: bytes) -> str:
-        extension = Path(filename).suffix.lower()
-        if extension not in MODEL_EXTENSIONS:
-            raise SheetError(f"Format non pris en charge ({', '.join(sorted(MODEL_EXTENSIONS))}).")
-        stem = slugify(Path(filename).stem)
-        self.models_dir.mkdir(parents=True, exist_ok=True)
-        _atomic_write(self.models_dir / f"{stem}{extension}", content)
-        return f"models/{stem}{extension}"
-
-
-def _atomic_write(path: Path, content: bytes) -> None:
-    fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".tmp-", suffix=path.suffix)
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(content)
-        os.chmod(tmp, 0o644)
-        os.replace(tmp, path)
-    except BaseException:
-        Path(tmp).unlink(missing_ok=True)
-        raise

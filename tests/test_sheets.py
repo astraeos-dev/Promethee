@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from app.sheets import SheetError, SheetLibrary, parse, slugify
+from app.sheets import SheetError, SheetLibrary, parse
 
 SHEETS_DIR = Path(__file__).resolve().parent.parent / "sheets"
 
@@ -47,15 +47,34 @@ def test_invalid_sheets_are_rejected(source):
         parse("x", source)
 
 
-def test_write_read_delete(tmp_path):
-    library = SheetLibrary(tmp_path)
-    library.write("sample", MINIMAL)
-    assert library.get("sample").meta["name"] == "Test"
-    with pytest.raises(SheetError):
-        library.write("sample", "invalid")
-    assert library.source("sample") == MINIMAL
-    library.delete("sample")
-    assert not library.exists("sample")
+def test_parts_are_validated():
+    sheet = parse("t", """---
+name: T
+parts:
+  - { model: models/dip-8.glb, x: 1, y: 2, side: bottom, rotation: 90 }
+  - { model: ../secret.glb }
+  - { model: models/board.stl }
+  - { model: models/x.glb, side: inside }
+---
+""")
+    parts = sheet.meta["parts"]
+    assert [(p["model"], p["side"]) for p in parts] == [("models/dip-8.glb", "bottom"), ("models/x.glb", "top")]
+    assert parts[0]["rotation"] == 90
+    assert len(sheet.warnings) == 3
+
+
+def test_example_parts_have_models_and_sizes():
+    sheets, _ = SheetLibrary(SHEETS_DIR).list()
+    for sheet in sheets:
+        assert sheet.meta["parts"], sheet.id
+        for part in sheet.meta["parts"]:
+            assert part["size"] and len(part["size"]) == 3, (sheet.id, part["model"])
+
+
+def test_missing_model_is_reported(tmp_path):
+    (tmp_path / "x.md").write_text("---\nname: X\nparts:\n  - { model: models/none.glb }\n---\n")
+    sheet = SheetLibrary(tmp_path).get("x")
+    assert any("introuvable" in w for w in sheet.warnings)
 
 
 def test_ids_and_model_paths_are_confined(tmp_path):
@@ -64,5 +83,5 @@ def test_ids_and_model_paths_are_confined(tmp_path):
         library.path("../etc")
     with pytest.raises(FileNotFoundError):
         library.model_path("../../secret.glb")
-    assert library.save_model("Mon Modèle.STL", b"solid") == "models/mon-modele.stl"
-    assert slugify("Module BME280 (I²C)") == "module-bme280-i2c"
+    with pytest.raises(FileNotFoundError):
+        library.model_path("models/model.stl")

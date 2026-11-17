@@ -1,7 +1,8 @@
-// Promethee UI: router and views (inventory, sheet list, sheet page, editor).
+// Promethee UI: router and views (inventory, sheet list, sheet page).
+// Sheets are read-only: new sheets and corrections are requested as GitHub issues.
 // Code is in English; every text shown to the user is in French.
 
-import { api, escapeHtml as h, notify, debounce, formatDate, slugify, pinType } from "./common.js";
+import { api, escapeHtml as h, notify, debounce, formatDate, pinType, sheetRequestUrl, sheetIssueUrl } from "./common.js";
 import { pinPositions } from "./geometry.js";
 import { createPinoutDiagram } from "./pinout.js";
 
@@ -30,15 +31,13 @@ const routes = [
   [/^#\/stock$/, renderInventory],
   [/^#\/sheets$/, renderSheetList],
   [/^#\/sheet\/([a-z0-9-]+)$/, renderSheet],
-  [/^#\/new$/, () => renderEditor(null)],
-  [/^#\/edit\/([a-z0-9-]+)$/, renderEditor],
 ];
 
 async function route() {
   const hash = location.hash || "#/stock";
   cleanup();
   for (const link of document.querySelectorAll("[data-nav]")) {
-    const isSheetPage = link.dataset.nav === "sheets" && /^#\/(sheet|edit|new)/.test(hash);
+    const isSheetPage = link.dataset.nav === "sheets" && hash.startsWith("#/sheet/");
     link.classList.toggle("active", hash.startsWith(`#/${link.dataset.nav}`) || isSheetPage);
   }
   for (const [pattern, render] of routes) {
@@ -278,11 +277,11 @@ async function renderSheetList() {
   view.innerHTML = `
     <div class="page-title">
       <div><div class="eyebrow">Documentation</div><h1>Fiches techniques</h1>
-      <p>Un fichier par appareil dans le dossier <code>sheets/</code>, à écrire à la main ou depuis l'éditeur.</p></div>
-      <span class="spacer"></span><a class="btn btn-primary" href="#/new">+ Nouvelle fiche</a>
+      <p>Livrées avec les mises à jour. Un appareil manque ? Demandez sa fiche sur GitHub.</p></div>
+      <span class="spacer"></span><a class="btn btn-primary" href="${sheetRequestUrl()}" target="_blank" rel="noopener">Demander une fiche ↗</a>
     </div>
     ${errors.length ? `<div class="sheet-errors"><h2>${errors.length} fiche(s) illisible(s)</h2><ul>
-      ${errors.map((e) => `<li><code>${h(e.id)}.md</code> : ${h(e.error)} <a href="#/edit/${h(e.id)}">Corriger</a></li>`).join("")}</ul></div>` : ""}
+      ${errors.map((e) => `<li><code>${h(e.id)}.md</code> : ${h(e.error)}</li>`).join("")}</ul></div>` : ""}
     <div class="toolbar">
       <input class="search" type="search" placeholder="Rechercher une fiche…" aria-label="Rechercher une fiche" id="search">
       <div class="filters" id="filters">
@@ -309,7 +308,7 @@ async function renderSheetList() {
       </a>`).join("")
       : `<div class="empty" style="grid-column:1/-1"><b>Aucune fiche</b>${sheets.length
         ? "Aucune fiche ne correspond à la recherche."
-        : "Créez la première depuis l'éditeur, ou déposez un fichier .md dans le dossier sheets/."}</div>`;
+        : "Demandez la première fiche sur GitHub."}</div>`;
   }
   render();
   view.querySelector("#search").addEventListener("input", (e) => { searchText = e.target.value; render(); });
@@ -405,7 +404,7 @@ async function renderSheet(id) {
       </div>
       <div class="buttons">
         <button class="btn" id="add-to-stock" type="button">Ajouter au stock</button>
-        <a class="btn" href="#/edit/${h(id)}">Modifier la fiche</a>
+        <a class="btn" href="${sheetIssueUrl(sheet)}" target="_blank" rel="noopener">Signaler une erreur ↗</a>
       </div>
     </div>
     ${warningsBlock(sheet.warnings, "À vérifier dans la fiche")}
@@ -441,118 +440,5 @@ async function renderSheet(id) {
   });
   view.querySelector("#add-to-stock").addEventListener("click", async () => {
     openItemDialog(null, await fetchSheets(), route, { name: sheet.name, category: sheet.category, sheet: id, quantity: 1 });
-  });
-}
-
-// ---------- Editor ----------
-
-async function renderEditor(id) {
-  const isNew = !id;
-  const source = isNew ? await api("/sheets/template", { raw: true }) : await api(`/sheets/${id}/source`, { raw: true });
-  view.innerHTML = `
-    <div class="page-title">
-      <div><div class="eyebrow">${isNew ? "Nouvelle fiche" : "Modifier"}</div>
-      <h1>${isNew ? "Créer une fiche" : `<code>${h(id)}.md</code>`}</h1>
-      <p>En-tête YAML (package, pinout, specs) puis texte en Markdown. Format détaillé dans <code>docs/sheet-format.md</code>.</p></div>
-    </div>
-    <div class="editor-bar">
-      ${isNew ? `<label class="field"><span>Identifiant (nom du fichier)</span><input id="sheet-id" placeholder="mon-appareil" pattern="[a-z0-9][a-z0-9-]*"></label>` : ""}
-      <button class="btn" id="attach-model" type="button">Joindre un modèle 3D…</button>
-      <input type="file" id="model-file" accept=".glb,.gltf,.stl" hidden>
-      <span class="spacer"></span>
-      ${isNew ? "" : '<button class="btn btn-danger" id="delete" type="button">Supprimer</button>'}
-      <a class="btn" href="${isNew ? "#/sheets" : `#/sheet/${h(id)}`}">Annuler</a>
-      <button class="btn btn-primary" id="save" type="button">Enregistrer <kbd>Ctrl+S</kbd></button>
-    </div>
-    <div class="editor">
-      <textarea id="source" spellcheck="false" aria-label="Contenu de la fiche">${h(source)}</textarea>
-      <div class="preview" id="preview"><div class="muted">Aperçu…</div></div>
-    </div>`;
-  const textarea = view.querySelector("#source");
-  const preview = view.querySelector("#preview");
-  const idInput = view.querySelector("#sheet-id");
-  let idEditedByUser = false;
-  let dirty = false;
-  let viewer = null;
-
-  async function refreshPreview() {
-    try {
-      const sheet = await api("/sheets/preview", { method: "POST", body: { source: textarea.value } });
-      if (idInput && !idEditedByUser) idInput.value = slugify(sheet.name);
-      viewer?.dispose();
-      preview.innerHTML = `${warningsBlock(sheet.warnings, "À vérifier")}<div id="preview-scene"></div>${pinoutSection(sheet, "preview")}`;
-      const link = { hoverFrom3D: () => {} };
-      const viewerPromise = mountViewer(preview.querySelector("#preview-scene"), sheet, { onHover: (k) => link.hoverFrom3D(k) });
-      Object.assign(link, linkPinViews(preview, sheet, "preview-diagram", viewerPromise));
-      viewer = await viewerPromise;
-    } catch (err) {
-      viewer?.dispose();
-      viewer = null;
-      preview.innerHTML = `<div class="preview-error">${h(err.message)}</div>`;
-    }
-  }
-  const refreshLater = debounce(refreshPreview, 500);
-  await refreshPreview();
-
-  textarea.addEventListener("input", () => { dirty = true; refreshLater(); });
-  textarea.addEventListener("keydown", (e) => {
-    if (e.key === "Tab" && !e.shiftKey) {
-      e.preventDefault();
-      textarea.setRangeText("  ", textarea.selectionStart, textarea.selectionEnd, "end");
-      refreshLater();
-    }
-  });
-  idInput?.addEventListener("input", () => { idEditedByUser = true; });
-
-  async function save() {
-    try {
-      const sheet = isNew
-        ? await api("/sheets", { method: "POST", body: { source: textarea.value, id: idInput.value.trim() || undefined } })
-        : await api(`/sheets/${id}`, { method: "PUT", body: { source: textarea.value } });
-      dirty = false;
-      notify("Fiche enregistrée.");
-      location.hash = `#/sheet/${sheet.id}`;
-    } catch (err) { notify(err.message, true); }
-  }
-  view.querySelector("#save").addEventListener("click", save);
-  const onKeydown = (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
-  };
-  const onBeforeUnload = (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } };
-  document.addEventListener("keydown", onKeydown);
-  window.addEventListener("beforeunload", onBeforeUnload);
-  cleanups.push(() => {
-    document.removeEventListener("keydown", onKeydown);
-    window.removeEventListener("beforeunload", onBeforeUnload);
-  });
-
-  view.querySelector("#delete")?.addEventListener("click", async () => {
-    if (!confirm(`Supprimer le fichier ${id}.md ? Les articles du stock liés seront conservés.`)) return;
-    try {
-      await api(`/sheets/${id}`, { method: "DELETE" });
-      dirty = false;
-      notify("Fiche supprimée.");
-      location.hash = "#/sheets";
-    } catch (err) { notify(err.message, true); }
-  });
-
-  const modelInput = view.querySelector("#model-file");
-  view.querySelector("#attach-model").addEventListener("click", () => modelInput.click());
-  modelInput.addEventListener("change", async () => {
-    const file = modelInput.files[0];
-    if (!file) return;
-    const form = new FormData();
-    form.append("file", file);
-    try {
-      const { path } = await api("/models", { method: "POST", body: form });
-      const line = `model3d: ${path}`;
-      textarea.value = /^model3d:.*$/m.test(textarea.value)
-        ? textarea.value.replace(/^model3d:.*$/m, line)
-        : textarea.value.replace(/^(---\r?\n[\s\S]*?)(\r?\n---)/, `$1\n${line}$2`);
-      dirty = true;
-      notify(`Modèle enregistré dans sheets/${path}.`);
-      refreshPreview();
-    } catch (err) { notify(err.message, true); }
-    modelInput.value = "";
   });
 }

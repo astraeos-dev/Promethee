@@ -35,9 +35,15 @@ pinout:
         - { n: 3, name: SCL, type: i2c, description: "Horloge I²C" }
         - { n: 4, name: SDA, type: i2c, description: "Données I²C" }
 
-components:
-  - { name: Capteur BME280, x: 5.25, y: 8.5, width: 2.5, length: 2.5, height: 0.93, color: "#c8ccd2" }
-  - { name: Résistances de tirage, x: 8.6, y: 8.5, width: 1, length: 2, height: 0.45, color: "#202227" }
+# Vrais modèles 3D (sheets/models, bibliothèque KiCad), placés par leur centre.
+parts:
+  - { name: Barrette, model: models/pin-header-1x04.glb, x: 5.25, y: 1.27, rotation: 90, side: bottom }
+  - { name: Capteur BME280, model: models/bosch-lga-8-2.5x2.5.glb, x: 5.25, y: 8.8, color: "#c8ccd2" }
+  - { name: Régulateur 3,3 V, model: models/sot-23-5.glb, x: 8, y: 5.2 }
+  - { name: Résistance de tirage SDA, model: models/r-0603.glb, x: 2.4, y: 5.2, rotation: 90 }
+  - { name: Résistance de tirage SCL, model: models/r-0603.glb, x: 2.4, y: 8.4, rotation: 90 }
+  - { name: Condensateur, model: models/c-0603.glb, x: 8.4, y: 9, rotation: 90 }
+  - { name: Condensateur, model: models/c-0603.glb, x: 8.4, y: 11.5, rotation: 90 }
 ---
 
 ## Présentation

@@ -1,0 +1,61 @@
+name: Demander une fiche
+description: Ajouter la fiche technique d'un composant, d'une carte ou d'un module.
+title: "Fiche : "
+labels: ["fiche"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        La fiche sera ajoutée dans une prochaine mise à jour de Prométhée, avec son brochage,
+        sa vue 3D et un mode d'emploi. Plus les informations sont précises, plus vite elle arrive.
+  - type: input
+    id: device
+    attributes:
+      label: Appareil
+      description: Nom courant et, si possible, la version de la carte.
+      placeholder: ESP32-C3 SuperMini, module relais 2 canaux, LM317…
+    validations:
+      required: true
+  - type: input
+    id: part_number
+    attributes:
+      label: Fabricant et référence
+      placeholder: Espressif ESP32-C3FH4, Texas Instruments LM317T…
+  - type: dropdown
+    id: category
+    attributes:
+      label: Catégorie
+      options:
+        - Carte de développement
+        - Module (capteur, afficheur, communication…)
+        - Circuit intégré
+        - Transistor, régulateur
+        - Composant passif
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Liens
+      description: Fiche technique (datasheet), page du vendeur, schéma, brochage publié par le fabricant.
+      placeholder: https://…
+    validations:
+      required: true
+  - type: textarea
+    id: model
+    attributes:
+      label: Modèle 3D (facultatif)
+      description: |
+        Lien vers un modèle STEP du fabricant, ou nom du modèle dans la bibliothèque KiCad.
+        Sans modèle, la vue est assemblée à partir de composants KiCad.
+  - type: textarea
+    id: photos
+    attributes:
+      label: Photos (facultatif)
+      description: Dessus et dessous de la carte, avec les inscriptions lisibles. Glisser les images ici.
+  - type: textarea
+    id: usage
+    attributes:
+      label: Ce que vous voulez y trouver
+      description: Montage type, code d'exemple, précautions, compatibilité 3,3 V / 5 V…

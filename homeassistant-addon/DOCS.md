@@ -10,18 +10,14 @@
 L'interface passe par Home Assistant (Ingress) : pas de port à ouvrir, et seuls les utilisateurs
 connectés à Home Assistant y ont accès.
 
-## Où sont les fichiers
+## Fiches techniques
 
-| Contenu | Emplacement |
-|---------|-------------|
-| Fiches (un fichier `.md` par appareil) | `/addon_configs/<id>_promethee/sheets/` |
-| Modèles 3D (`.glb`, `.stl`) | `/addon_configs/<id>_promethee/sheets/models/` |
-| Base du stock | interne au module, incluse dans les sauvegardes de Home Assistant |
+Les fiches (brochage, vue 3D, mode d'emploi) sont livrées avec le module et arrivent avec ses
+mises à jour. Pour en demander une : bouton **Demander une fiche** dans Prométhée, ou
+[ce formulaire](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml).
+Une erreur dans une fiche se signale avec **Signaler une erreur**, sur la fiche.
 
-Pour écrire des fiches à la main, ouvrir ce dossier avec le module **Studio Code Server**,
-**File editor** (désactiver *Enforce Basepath*) ou un partage **Samba** (dossier `addon_configs`).
-Partir de `_template.md` (format : `docs/sheet-format.md` du dépôt). Une fiche enregistrée apparaît au prochain affichage, sans redémarrage.
-Au premier démarrage, cinq fiches d'exemple sont créées.
+Le stock, lui, est enregistré dans le module et inclus dans les sauvegardes de Home Assistant.
 
 ## Capteurs
 
@@ -83,5 +79,5 @@ Cet accès n'a **pas d'authentification** : à réserver au réseau local.
 
 ## Sauvegarde
 
-Les sauvegardes de Home Assistant incluent le module : base du stock et fiches.
+Les sauvegardes de Home Assistant incluent le module et donc la base du stock.
 Le stock s'exporte aussi en CSV depuis la page **Stock**.

@@ -1,6 +1,10 @@
 # Format d'une fiche
 
-Chaque appareil a son fichier dans le dossier `sheets/` : `sheets/<identifiant>.md`.
+Ce document sert à préparer les fiches livrées avec Prométhée. Pour en obtenir une nouvelle,
+il suffit d'[ouvrir une demande](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml) :
+la fiche est ajoutée dans une mise à jour.
+
+Chaque appareil a son fichier dans le dossier `sheets/` du dépôt : `sheets/<identifiant>.md`.
 L'identifiant est le nom du fichier, en minuscules, chiffres et tirets (`esp32-devkitc-v4`).
 Les fichiers qui commencent par `_` (comme `_template.md`) ne sont pas listés.
 
@@ -11,9 +15,9 @@ Une fiche a deux parties :
 2. un **texte en Markdown** : présentation, câblage, code d'exemple, précautions.
    Il s'affiche dans l'onglet « Utilisation ».
 
-Le plus simple est de copier `sheets/_template.md`, ou d'utiliser **+ Nouvelle fiche** dans
-l'interface, qui montre l'aperçu 3D et les erreurs pendant la saisie. Un fichier modifié à la
-main est relu au prochain affichage, sans redémarrer le conteneur.
+Partir de `sheets/_template.md`. Pour voir le résultat, lancer Prométhée en développement
+(`uvicorn app.main:app --reload`) : un fichier modifié est relu au prochain affichage. Les tests
+(`pytest`) vérifient que chaque fiche se lit sans avertissement.
 
 ## Identité
 
@@ -30,7 +34,9 @@ main est relu au prochain affichage, sans redémarrer le conteneur.
 
 ## Boîtier et vue 3D
 
-La vue 3D est **générée** à partir de `package`, `pinout` et `components`.
+La vue 3D part du boîtier (`package`) : circuit imprimé avec ses pastilles et la sérigraphie des
+broches pour une carte, ou repères des pattes pour un DIP ou un TO-92. Les **vrais modèles 3D** des
+pièces (`parts`, voir plus bas) s'y ajoutent ; sans eux, une représentation simplifiée est dessinée.
 Toutes les dimensions sont en millimètres, **vue de dessus** : `width` est horizontale,
 `length` verticale.
 
@@ -46,21 +52,10 @@ package:
 
 | Type     | Rendu                                                                 |
 |----------|-----------------------------------------------------------------------|
-| `board`  | circuit imprimé, barrettes mâles dessous, noms des broches sérigraphiés |
+| `board`  | circuit imprimé, noms des broches sérigraphiés                        |
 | `module` | comme `board`, pour les petits modules (capteurs, convertisseurs)     |
 | `dip`    | circuit intégré DIP : `width` = écart entre les rangées (7,62 pour un DIP-8) |
 | `to92`   | transistor ou régulateur TO-92, face plate vers le bas de la vue      |
-
-Pour afficher un vrai modèle (exporté de KiCad, FreeCAD, Fusion…), déposer un fichier `.glb`,
-`.gltf` (en un seul fichier) ou `.stl` dans `sheets/models/`, ou utiliser **Joindre un modèle 3D**
-dans l'éditeur, puis :
-
-```yaml
-model3d: models/esp32-devkitc.glb
-```
-
-Le bouton **Modèle fourni** bascule alors entre le modèle et la vue générée (seule la vue générée
-permet de survoler les broches).
 
 ## Brochage
 
@@ -104,18 +99,38 @@ se lit donc 8, 7, 6, 5.
 | `nc`       | Non connectée   |
 | `other`    | Autre           |
 
-## Composants visibles
+## Pièces réelles (vue 3D)
 
-Pour rendre la carte reconnaissable : puces, connecteurs, boutons. `x` et `y` sont la position
-du **centre**, depuis le coin haut gauche.
+Les modèles viennent de la bibliothèque 3D de KiCad, convertis en `.glb` dans `sheets/models/`.
+Pour en ajouter un : déclarer son fichier STEP dans `tools/models.yaml`, puis lancer
+`python tools/build_models.py` (dépendances : `requirements-dev.txt`). Un modèle de fabricant
+au format STEP peut aussi y être ajouté, si sa licence permet de le redistribuer.
+
+```yaml
+parts:
+  - { name: Module ESP32, model: models/esp32-wroom-32e.glb, x: 13.95, y: 12.75, color: "#c8ccd2", label: "ESP32-WROOM-32E" }
+  - { name: Barrette J2, model: models/pin-header-1x19.glb, x: 1.27, y: 27.46, side: bottom }
+  - { name: Microcontrôleur, model: models/tqfp-32.glb, x: 9, y: 26.5, rotation: 45, label: "ATMEGA328P" }
+```
+
+| Clé        | Rôle                                                                  |
+|------------|-----------------------------------------------------------------------|
+| `model`    | fichier de `sheets/models/`                                           |
+| `x`, `y`   | position du **centre** de la pièce, en mm depuis le coin haut gauche  |
+| `rotation` | rotation en degrés, sens inverse des aiguilles d'une montre vue de dessus |
+| `side`     | `top` (défaut) ou `bottom` : pièce montée sous la carte (barrettes mâles…) |
+| `z`        | décalage vertical en mm (rarement utile)                              |
+| `color`    | couleur de la pièce dans le schéma 2D (`#2a2d34` par défaut)         |
+| `label`    | inscription imprimée sur le dessus (puces, blindages)                 |
+
+Pour un `dip` ou un `to92`, une seule pièce : le boîtier, centré sur l'appareil.
+
+Les pièces sans modèle peuvent rester sous forme de boîtes simples :
 
 ```yaml
 components:
-  - { name: Module ESP32, x: 13.95, y: 12.2, width: 18, length: 25.5, height: 3.1, color: "#b9bec6", label: "ESP32-WROOM-32E" }
-  - { name: Condensateur, x: 5, y: 30, width: 5, length: 5, height: 7, shape: cylinder, color: "#1d3f8f" }
+  - { name: Bouton, x: 5, y: 30, width: 6, length: 6, height: 3.5, color: "#c8ccd2" }
 ```
-
-`shape` vaut `box` (défaut) ou `cylinder`. `label` est imprimé sur le dessus.
 
 ## Pièges du YAML
 
