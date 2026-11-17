@@ -73,7 +73,8 @@ devices:
     part_number: ESP32-S3-DevKitC-1
     description: ESP32-S3 avec Wi-Fi, Bluetooth LE et USB natif.
     links:
-      - https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide.html
+      - https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
+      - https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/user_guide_v1.1.html
       - https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf
   - id: esp32-c3-devkitm-1
     name: ESP32-C3-DevKitM-1
@@ -170,7 +171,9 @@ devices:
     part_number: HC-SR501
     description: Détecteur de mouvement infrarouge (PIR), sensibilité et durée réglables.
     dimensions: 32 × 24 mm
-    links: [https://www.mpja.com/download/31227sc.pdf]
+    links:
+      - https://learn.adafruit.com/pir-passive-infrared-proximity-motion-sensor
+      - https://cdn-learn.adafruit.com/downloads/pdf/pir-passive-infrared-proximity-motion-sensor.pdf
   - id: bmp280-module
     name: Module BMP280
     category: Capteur
@@ -191,7 +194,7 @@ devices:
     manufacturer: TDK InvenSense
     part_number: MPU-6050
     description: Accéléromètre et gyroscope 3 axes, en I²C.
-    links: [https://invensense.tdk.com/wp-content/uploads/2015/02/MPU-6000-Datasheet1.pdf]
+    links: ["https://cdn.sparkfun.com/datasheets/Components/General%20IC/PS-MPU-6000A.pdf"]
   - id: vl53l0x-module
     name: Module VL53L0X
     category: Capteur
@@ -368,7 +371,9 @@ devices:
     part_number: SG90
     description: Micro-servo 180°, commandé en PWM.
     dimensions: 22,2 × 11,8 mm
-    links: [http://www.ee.ic.ac.uk/pcheung/teaching/DE1_EE/stores/sg90_datasheet.pdf]
+    links:
+      - http://www.ee.ic.ac.uk/pcheung/teaching/DE1_EE/stores/sg90_datasheet.pdf
+      - https://www.friendlywire.com/projects/ne555-servo-safe/SG90-datasheet.pdf
 
   # ---------- Circuits intégrés ----------
   - id: atmega328p
@@ -412,7 +417,9 @@ devices:
     manufacturer: Texas Instruments
     part_number: ULN2803AN
     description: Huit transistors Darlington pour relais et moteurs, en DIP-18.
-    links: [https://www.ti.com/lit/ds/symlink/uln2803a.pdf]
+    links:
+      - https://www.ti.com/lit/ds/symlink/uln2803c.pdf
+      - https://www.st.com/resource/en/datasheet/uln2801a.pdf
   - id: pc817
     name: PC817
     category: Circuit intégré
@@ -449,7 +456,9 @@ devices:
     manufacturer: onsemi
     part_number: 2N7000
     description: MOSFET canal N petit signal, en TO-92.
-    links: [https://www.onsemi.com/pdf/datasheet/2n7000-d.pdf]
+    links:
+      - https://www.onsemi.com/pdf/datasheet/nds7002a-d.pdf
+      - https://www.vishay.com/docs/70226/70226.pdf
   - id: irlz44n
     name: IRLZ44N
     category: Transistor
