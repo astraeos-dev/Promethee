@@ -104,19 +104,27 @@ docker compose logs -f        # suivre les journaux
 docker compose up -d --build  # mettre à jour après un git pull
 ```
 
+### Ajouter un article
+
+Dans **+ Ajouter**, le champ **Nom** propose une liste de matériel courant, classée par
+catégorie : cartes Arduino, ESP32 et Raspberry Pi Pico, capteurs, afficheurs, modules,
+régulateurs, circuits intégrés, transistors, diodes, résistances, condensateurs, LED,
+connectique… Quelques lettres suffisent à la filtrer (« uno », « dht », « température »).
+Choisir un nom remplit la catégorie, la valeur, le boîtier, la référence (dans les notes) et la
+fiche liée quand elle existe ; pour une résistance, un condensateur ou une LED, le champ
+**Valeur** propose ensuite les valeurs courantes. Un champ déjà rempli à la main n'est jamais
+remplacé, et tout autre nom reste possible.
+
+La liste est dans [sheets/catalog.yaml](sheets/catalog.yaml) ; ses liens vers les fiches
+techniques sont vérifiés chaque semaine par le workflow [Links](.github/workflows/links.yml).
+
 ### Demander une fiche
 
-Le bouton **Demander une fiche** ouvre une liste de matériel courant (cartes Arduino, ESP32 et
-Raspberry Pi Pico, capteurs, afficheurs, modules, régulateurs, circuits intégrés, transistors,
-diodes…). Choisir un appareil ouvre le formulaire de demande sur GitHub, déjà rempli : nom,
-fabricant et référence, catégorie, liens vers la fiche technique, dimensions. Il reste à ajouter
-des photos si possible. **Autre appareil** ouvre le formulaire vide, ou directement
-[ce lien](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml).
+Le bouton **Demander une fiche** ouvre le
+[formulaire de demande](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml)
+sur GitHub : nom de l'appareil, référence, lien vers sa fiche technique, photos si possible.
 Les fiches sont ajoutées au fur et à mesure des demandes, dans les mises à jour.
 Une erreur dans une fiche existante se signale avec **Signaler une erreur**, sur la fiche.
-
-La liste est dans [sheets/catalog.yaml](sheets/catalog.yaml) ; ses liens sont vérifiés chaque
-semaine par le workflow [Links](.github/workflows/links.yml).
 
 Le format des fiches, pour les préparer, est décrit dans [docs/sheet-format.md](docs/sheet-format.md).
 

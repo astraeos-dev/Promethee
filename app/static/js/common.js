@@ -18,6 +18,9 @@ export const PIN_TYPES = {
 
 export const pinType = (type) => PIN_TYPES[type] || PIN_TYPES.other;
 
+// Sheets are requested with a GitHub issue form (.github/ISSUE_TEMPLATE/fiche.yml).
+export const SHEET_REQUEST_URL = "https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml";
+
 export function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (c) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -64,7 +67,6 @@ export function debounce(fn, delay) {
 export function formatDate(iso) {
   return new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
 }
-
 
 export function isLightColor(hex) {
   const n = parseInt(hex.slice(1), 16);
