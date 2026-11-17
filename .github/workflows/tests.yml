@@ -33,4 +33,4 @@ jobs:
           curl -fs localhost:8000/api/health || { docker logs promethee; exit 1; }
           # Static files the 3D view needs must be in the image.
           curl -fs -o /dev/null localhost:8000/static/vendor/three/build/three.module.min.js
-          curl -fs -o /dev/null localhost:8000/api/models/dip-8.glb
+          curl -fs -o /dev/null localhost:8000/api/models/ne555.glb
