@@ -2,26 +2,27 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
+  <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Prométhée</title>
   <meta name="description" content="Stock de composants électroniques et fiches techniques en 3D.">
   <meta name="theme-color" content="#0b0f17">
-  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/static/app.css">
+  <link rel="icon" href="static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/app.css">
   <script type="importmap">
     {
       "imports": {
-        "three": "/static/vendor/three/build/three.module.min.js",
-        "three/addons/": "/static/vendor/three/examples/jsm/"
+        "three": "./static/vendor/three/build/three.module.min.js",
+        "three/addons/": "./static/vendor/three/examples/jsm/"
       }
     }
   </script>
-  <script type="module" src="/static/js/app.js"></script>
+  <script type="module" src="static/js/app.js"></script>
 </head>
 <body>
   <header class="entete">
     <a class="marque" href="#/stock" aria-label="Prométhée, accueil">
-      <img src="/static/icon.svg" width="34" height="34" alt="">
+      <img src="static/icon.svg" width="34" height="34" alt="">
       <span>Prométhée</span>
     </a>
     <nav class="nav" aria-label="Navigation principale">

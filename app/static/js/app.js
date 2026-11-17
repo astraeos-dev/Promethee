@@ -71,7 +71,7 @@ async function vueStock() {
       <label class="case"><input type="checkbox" id="alerte"> À réapprovisionner</label>
       <span class="espace"></span>
       <button class="bouton" id="importer" type="button">Importer CSV</button>
-      <a class="bouton" href="/api/export.csv" download>Exporter CSV</a>
+      <a class="bouton" href="api/export.csv" download>Exporter CSV</a>
       <button class="bouton bouton-or" id="ajouter" type="button">+ Ajouter</button>
       <input type="file" id="fichier-csv" accept=".csv,text/csv" hidden>
     </div>

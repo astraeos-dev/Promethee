@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import html
+import re
 import shutil
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import __version__, config
+from .homeassistant import Publieur, etats
 from .fiches import Bibliotheque, FicheError, analyser, slug, verifier_id
 from .stock import Stock, StockError
 
@@ -54,20 +57,39 @@ def amorcer_fiches(dossier: Path, exemples: Path) -> None:
         shutil.copytree(exemples / "modeles", dossier / "modeles", dirs_exist_ok=True)
 
 
-def creer_app(dossier_fiches: Path | None = None, base: Path | None = None) -> FastAPI:
+def creer_app(dossier_fiches: Path | None = None, base: Path | None = None,
+              publieur: Publieur | None = None) -> FastAPI:
     dossier_fiches = dossier_fiches or config.FICHES_DIR
     base = base or config.DB_PATH
 
     @asynccontextmanager
     async def cycle(app: FastAPI):
         amorcer_fiches(dossier_fiches, config.EXEMPLES_DIR)
+        publieur.demarrer()
         yield
+        publieur.arreter()
 
     app = FastAPI(title="Prométhée", version=__version__, lifespan=cycle,
                   docs_url="/api/docs", openapi_url="/api/openapi.json", redoc_url=None)
     biblio = Bibliotheque(dossier_fiches)
     stock = Stock(base)
     app.state.biblio, app.state.stock = biblio, stock
+
+    def etat_ha() -> dict[str, dict]:
+        fiches, _ = biblio.lister()
+        return etats({**stock.resume(), "fiches": len(fiches)}, stock.lister(alerte=True))
+
+    publieur = publieur or Publieur(etat_ha)
+    app.state.publieur = publieur
+
+    @app.middleware("http")
+    async def signaler_modifications(request: Request, appel_suivant):
+        reponse = await appel_suivant(request)
+        if request.method != "GET" and reponse.status_code < 400 and \
+                request.url.path.startswith(("/api/articles", "/api/import", "/api/fiches")) and \
+                not request.url.path.endswith("/apercu"):
+            publieur.signaler()
+        return reponse
 
     @app.exception_handler(FicheError)
     @app.exception_handler(StockError)
@@ -79,6 +101,10 @@ def creer_app(dossier_fiches: Path | None = None, base: Path | None = None) -> F
     @app.get("/api/sante")
     def sante() -> dict[str, Any]:
         return {"statut": "ok", "version": __version__}
+
+    @app.get("/api/alertes")
+    def alertes() -> list[dict]:
+        return stock.lister(alerte=True)
 
     @app.get("/api/resume")
     def resume() -> dict[str, Any]:
@@ -224,8 +250,15 @@ def creer_app(dossier_fiches: Path | None = None, base: Path | None = None) -> F
     app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
 
     @app.get("/", include_in_schema=False)
-    def accueil() -> FileResponse:
-        return FileResponse(config.STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
+    def accueil(request: Request) -> HTMLResponse:
+        # Derrière l'Ingress de Home Assistant, l'interface est servie sous un préfixe
+        # (/api/hassio_ingress/<jeton>) transmis dans l'en-tête X-Ingress-Path.
+        prefixe = request.headers.get("x-ingress-path", "").rstrip("/")
+        if not re.fullmatch(r"(/[A-Za-z0-9._~-]+)*", prefixe):
+            prefixe = ""
+        page = (config.STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        page = page.replace('<base href="/">', f'<base href="{html.escape(prefixe)}/">', 1)
+        return HTMLResponse(page, headers={"Cache-Control": "no-cache"})
 
     return app
 

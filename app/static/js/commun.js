@@ -31,7 +31,7 @@ export async function api(chemin, { methode = "GET", corps, brut = false } = {})
     options.headers["Content-Type"] = "application/json";
     options.body = JSON.stringify(corps);
   }
-  const r = await fetch(`/api${chemin}`, options);
+  const r = await fetch(`api${chemin}`, options);
   if (!r.ok) {
     let message = `Erreur ${r.status}`;
     try {

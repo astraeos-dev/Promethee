@@ -452,7 +452,7 @@ export function creerVue3D(conteneur, fiche, { surSurvol = () => {} } = {}) {
 }
 
 async function chargerModele(chemin) {
-  const url = `/api/modeles/${chemin.split("/").map(encodeURIComponent).join("/")}`;
+  const url = `api/modeles/${chemin.split("/").map(encodeURIComponent).join("/")}`;
   let objet;
   if (/\.stl$/i.test(chemin)) {
     const { STLLoader } = await import("three/addons/loaders/STLLoader.js");
