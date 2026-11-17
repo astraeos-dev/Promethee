@@ -10,6 +10,7 @@ from typing import Any
 
 from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -65,6 +66,8 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
     app = FastAPI(title="Prométhée", version=__version__, lifespan=lifespan,
                   docs_url="/api/docs", openapi_url="/api/openapi.json", redoc_url=None)
     app.state.library, app.state.inventory, app.state.publisher = library, inventory, publisher
+    # 3D models and Three.js shrink about four times: it matters through Ingress or on a Pi.
+    app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=6)
 
     @app.exception_handler(SheetError)
     @app.exception_handler(InventoryError)

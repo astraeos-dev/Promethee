@@ -2,14 +2,17 @@
 
 Sheets ship with the application (sheets/ directory) and are read-only at
 runtime; new sheets are requested through GitHub issues and added in
-releases. The format is described in docs/sheet-format.md. Files whose
-name starts with "_" (such as the blank template) are not listed.
+releases. Each sheet comes with a complete 3D model of the device,
+sheets/models/<id>.glb, built from the sheet by tools/build_models.py.
 
-Messages returned to the user (errors, warnings) are in French, like the UI.
+The format is described in docs/sheet-format.md. Files whose name starts
+with "_" (such as the blank template) are not listed. Messages returned to
+the user (errors, warnings) are in French, like the UI.
 """
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -20,6 +23,7 @@ import markdown
 import yaml
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
+PART_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,63}$")
 FRONT_MATTER_RE = re.compile(r"\A---[ \t]*\r?\n(.*?)\r?\n---[ \t]*(?:\r?\n|\Z)(.*)\Z", re.S)
 COLOR_RE = re.compile(r"#[0-9a-fA-F]{6}")
 
@@ -28,9 +32,11 @@ PIN_TYPES = {
     "control", "reserved", "nc", "other",
 }
 PACKAGE_TYPES = {"board", "module", "dip", "to92"}
-SIDES = {"left", "right", "top", "bottom"}
-MODEL_EXTENSIONS = {".glb"}
-SIDES_OF_BOARD = {"top", "bottom"}
+BOARD_TYPES = {"board", "module"}
+ROW_SIDES = {"left", "right", "top", "bottom"}
+BOARD_SIDES = {"top", "bottom"}
+SHAPES = {"box", "cylinder"}
+FINISHES = {"gold", "tin"}
 
 # Default size (length, width, thickness in mm) and color per package type.
 PACKAGE_DEFAULTS = {
@@ -83,7 +89,7 @@ class Sheet:
             "description": m["description"],
             "tags": m["tags"],
             "pin_count": sum(len(r["pins"]) for r in m["pinout"]["rows"]),
-            "has_parts": bool(m["parts"]),
+            "has_model": bool(m.get("model")),
         }
 
     def full(self) -> dict[str, Any]:
@@ -92,8 +98,10 @@ class Sheet:
             extensions=["tables", "fenced_code", "sane_lists", "toc", "attr_list"],
             output_format="html",
         )
-        return {**self.meta, "id": self.id, "html": html, "source": self.source, "warnings": self.warnings}
+        return {**self.meta, "id": self.id, "html": html, "warnings": self.warnings}
 
+
+# ---------- Value helpers ----------
 
 def _text(value: Any) -> str:
     return "" if value is None else str(value).strip()
@@ -113,6 +121,13 @@ def _positive(value: Any, default: float, key: str, warnings: list[str]) -> floa
     return number
 
 
+def _number(value: Any, default: float = 0.0) -> float:
+    try:
+        return default if value is None or value == "" else float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _optional_float(value: Any) -> float | None:
     try:
         return None if value is None or value == "" else float(value)
@@ -127,6 +142,26 @@ def _color(value: Any, default: str, key: str, warnings: list[str]) -> str:
         return default
     return color
 
+
+def _choice(value: Any, allowed: set[str], default: str, key: str, warnings: list[str]) -> str:
+    choice = _text(value).lower() or default
+    if choice not in allowed:
+        warnings.append(f"{key} : « {choice} » inconnu (attendu : {', '.join(sorted(allowed))}), « {default} » utilisé.")
+        return default
+    return choice
+
+
+def _objects(raw: Any, key: str, warnings: list[str]) -> list[tuple[int, dict]]:
+    items = []
+    for i, item in enumerate(raw or []):
+        if isinstance(item, dict):
+            items.append((i, item))
+        else:
+            warnings.append(f"{key}[{i}] ignoré : ce doit être un objet.")
+    return items
+
+
+# ---------- Normalization ----------
 
 def split_front_matter(source: str) -> tuple[dict[str, Any], str]:
     """Split the YAML front matter from the Markdown body."""
@@ -145,34 +180,59 @@ def split_front_matter(source: str) -> tuple[dict[str, Any], str]:
 
 def _normalize_package(raw: Any, warnings: list[str]) -> dict[str, Any]:
     pkg = raw if isinstance(raw, dict) else {}
-    kind = _text(pkg.get("type")).lower() or "board"
-    if kind not in PACKAGE_TYPES:
-        warnings.append(f"package.type : « {kind} » inconnu (attendu : {', '.join(sorted(PACKAGE_TYPES))}), « board » utilisé.")
-        kind = "board"
+    kind = _choice(pkg.get("type"), PACKAGE_TYPES, "board", "package.type", warnings)
     length, width, thickness, color = PACKAGE_DEFAULTS[kind]
-    return {
+    width = _positive(pkg.get("width"), width, "package.width", warnings)
+    length = _positive(pkg.get("length"), length, "package.length", warnings)
+    package = {
         "type": kind,
-        "length": _positive(pkg.get("length"), length, "package.length", warnings),
-        "width": _positive(pkg.get("width"), width, "package.width", warnings),
+        "length": length,
+        "width": width,
         "thickness": _positive(pkg.get("thickness"), thickness, "package.thickness", warnings),
         "color": _color(pkg.get("color"), color, "package.color", warnings),
         "marking": _text(pkg.get("marking")),
+        # Printed circuit board details, used by the 3D model.
+        "finish": _choice(pkg.get("finish"), FINISHES, "gold", "package.finish", warnings),
+        "corner_radius": min(_number(pkg.get("corner_radius"), 0.6), width / 2, length / 2),
+        "silkscreen_color": _color(pkg.get("silkscreen_color"), "#f1f3f6", "package.silkscreen_color", warnings),
+        "silkscreen": [],
+        "holes": [],
     }
+    for i, item in _objects(pkg.get("silkscreen"), "package.silkscreen", warnings):
+        if not _text(item.get("text")):
+            continue
+        package["silkscreen"].append({
+            "text": _text(item.get("text")),
+            "x": _number(item.get("x")),
+            "y": _number(item.get("y")),
+            "size": _positive(item.get("size"), 1.0, f"package.silkscreen[{i}].size", warnings),
+            "rotation": _number(item.get("rotation")),
+            "side": _choice(item.get("side"), BOARD_SIDES, "top", f"package.silkscreen[{i}].side", warnings),
+        })
+    for i, item in _objects(pkg.get("holes"), "package.holes", warnings):
+        drill = _positive(item.get("drill"), 1.0, f"package.holes[{i}].drill", warnings)
+        package["holes"].append({
+            "x": _number(item.get("x")),
+            "y": _number(item.get("y")),
+            "drill": drill,
+            "pad": max(_number(item.get("pad")), 0.0),  # 0: not plated
+            "square": bool(item.get("square")),
+        })
+    return package
 
 
 def _normalize_pin(raw: Any, index: int, warnings: list[str]) -> dict[str, Any]:
     pin = raw if isinstance(raw, dict) else {"name": raw}
-    kind = _text(pin.get("type")).lower() or "other"
-    if kind not in PIN_TYPES:
-        warnings.append(f"Broche « {_text(pin.get('name'))} » : type « {kind} » inconnu, « other » utilisé.")
-        kind = "other"
+    name = _text(pin.get("name")) or "?"
     functions = pin.get("functions") or []
     if not isinstance(functions, list):
         functions = [functions]
     return {
         "n": _text(pin.get("n")) or str(index + 1),
-        "name": _text(pin.get("name")) or "?",
-        "type": kind,
+        "name": name,
+        # Text printed next to the pin on the real board, when it differs from the name.
+        "silkscreen": _text(pin.get("silkscreen")) or name,
+        "type": _choice(pin.get("type"), PIN_TYPES, "other", f"Broche « {name} » : type", warnings),
         "functions": [_text(f) for f in functions if _text(f)],
         "description": _text(pin.get("description")),
     }
@@ -183,70 +243,69 @@ def _normalize_pinout(raw: Any, package: dict[str, Any], warnings: list[str]) ->
     pitch = _positive(pinout.get("pitch"), 1.27 if package["type"] == "to92" else 2.54, "pinout.pitch", warnings)
     default_inset = 0.0 if package["type"] in {"dip", "to92"} else 1.27
     rows = []
-    for i, row in enumerate(pinout.get("rows") or []):
-        if not isinstance(row, dict):
-            warnings.append(f"pinout.rows[{i}] ignorée : ce doit être un objet.")
-            continue
-        side = _text(row.get("side")).lower() or "left"
-        if side not in SIDES:
-            warnings.append(f"pinout.rows[{i}].side : « {side} » inconnu, « left » utilisé.")
-            side = "left"
+    for i, row in _objects(pinout.get("rows"), "pinout.rows", warnings):
         inset = _optional_float(row.get("inset"))
         rows.append({
             "name": _text(row.get("name")) or f"R{i + 1}",
-            "side": side,
+            "side": _choice(row.get("side"), ROW_SIDES, "left", f"pinout.rows[{i}].side", warnings),
             "pitch": _positive(row.get("pitch"), pitch, f"pinout.rows[{i}].pitch", warnings),
             "inset": default_inset if inset is None else inset,
             "start": _optional_float(row.get("start")),
             "pins": [_normalize_pin(p, j, warnings) for j, p in enumerate(row.get("pins") or [])],
         })
+    _place_pins(package, rows)
     return {"pitch": pitch, "rows": rows}
 
 
-def _normalize_components(raw: Any, warnings: list[str]) -> list[dict[str, Any]]:
-    components = []
-    for i, comp in enumerate(raw or []):
-        if not isinstance(comp, dict):
-            warnings.append(f"components[{i}] ignoré : ce doit être un objet.")
-            continue
-        components.append({
-            "name": _text(comp.get("name")),
-            "x": _optional_float(comp.get("x")) or 0.0,
-            "y": _optional_float(comp.get("y")) or 0.0,
-            "width": _positive(comp.get("width"), 3, f"components[{i}].width", warnings),
-            "length": _positive(comp.get("length"), 3, f"components[{i}].length", warnings),
-            "height": _positive(comp.get("height"), 1, f"components[{i}].height", warnings),
-            "color": _color(comp.get("color"), "#2a2d34", f"components[{i}].color", warnings),
-            "label": _text(comp.get("label")),
-            "shape": "cylinder" if _text(comp.get("shape")).lower() == "cylinder" else "box",
-        })
-    return components
+def _place_pins(package: dict[str, Any], rows: list[dict[str, Any]]) -> None:
+    """Give each pin its position (x, y in mm, seen from above, from the top left corner).
+
+    Pins of a row are listed in physical order: top to bottom on the left and
+    right sides, left to right on the top and bottom sides. A row is centred
+    on its side unless "start" gives the position of its first pin.
+    """
+    for row in rows:
+        count = len(row["pins"])
+        vertical = row["side"] in {"left", "right"}
+        side_length = package["length"] if vertical else package["width"]
+        start = row["start"] if row["start"] is not None else (side_length - (count - 1) * row["pitch"]) / 2
+        for i, pin in enumerate(row["pins"]):
+            along = start + i * row["pitch"]
+            x, y = {
+                "left": (row["inset"], along),
+                "right": (package["width"] - row["inset"], along),
+                "top": (along, row["inset"]),
+                "bottom": (along, package["length"] - row["inset"]),
+            }[row["side"]]
+            pin["x"], pin["y"] = round(x, 4), round(y, 4)
 
 
 def _normalize_parts(raw: Any, warnings: list[str]) -> list[dict[str, Any]]:
-    """Real 3D models (sheets/models/*.glb) placed on the device."""
+    """Parts of the 3D model: a converted KiCad model ("model") or a simple shape ("shape")."""
     parts = []
-    for i, part in enumerate(raw or []):
-        if not isinstance(part, dict):
-            warnings.append(f"parts[{i}] ignoré : ce doit être un objet.")
-            continue
+    for i, part in _objects(raw, "parts", warnings):
+        key = f"parts[{i}]"
         model = _text(part.get("model"))
-        if Path(model).suffix.lower() not in MODEL_EXTENSIONS or ".." in model:
-            warnings.append(f"parts[{i}].model : « {model} » doit être un fichier .glb du dossier models/.")
+        shape = _text(part.get("shape")).lower()
+        if model and not PART_NAME_RE.fullmatch(model):
+            warnings.append(f"{key}.model : « {model} » n'est pas un nom de pièce (voir tools/parts.yaml).")
             continue
-        side = _text(part.get("side")).lower() or "top"
-        if side not in SIDES_OF_BOARD:
-            warnings.append(f"parts[{i}].side : « {side} » inconnu (top ou bottom), « top » utilisé.")
-            side = "top"
+        if not model and shape not in SHAPES:
+            warnings.append(f"{key} ignoré : indiquer « model » ou « shape » (box ou cylinder).")
+            continue
         parts.append({
             "name": _text(part.get("name")),
             "model": model,
-            "x": _optional_float(part.get("x")) or 0.0,
-            "y": _optional_float(part.get("y")) or 0.0,
-            "z": _optional_float(part.get("z")) or 0.0,
-            "rotation": _optional_float(part.get("rotation")) or 0.0,
-            "side": side,
-            "color": _color(part.get("color"), "#2a2d34", f"parts[{i}].color", warnings),
+            "shape": "" if model else shape,
+            "width": _positive(part.get("width"), 1.0, f"{key}.width", warnings),
+            "length": _positive(part.get("length"), 1.0, f"{key}.length", warnings),
+            "height": _positive(part.get("height"), 1.0, f"{key}.height", warnings),
+            "x": _number(part.get("x")),
+            "y": _number(part.get("y")),
+            "z": _number(part.get("z")),
+            "rotation": _number(part.get("rotation")),
+            "side": _choice(part.get("side"), BOARD_SIDES, "top", f"{key}.side", warnings),
+            "color": _color(part.get("color"), "#2a2d34", f"{key}.color", warnings),
             "label": _text(part.get("label")),
         })
     return parts
@@ -284,7 +343,6 @@ def normalize(meta: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
         "links": links,
         "package": package,
         "pinout": _normalize_pinout(meta.get("pinout"), package, warnings),
-        "components": _normalize_components(meta.get("components"), warnings),
         "parts": _normalize_parts(meta.get("parts"), warnings),
     }, warnings
 
@@ -293,6 +351,13 @@ def parse(sheet_id: str, source: str) -> Sheet:
     meta, body = split_front_matter(source)
     normalized, warnings = normalize(meta)
     return Sheet(id=sheet_id, meta=normalized, body=body, source=source, warnings=warnings)
+
+
+def model_inputs_hash(meta: dict[str, Any]) -> str:
+    """Fingerprint of what the 3D model is built from, to detect a stale model."""
+    parts = [{k: v for k, v in part.items() if k != "size"} for part in meta["parts"]]
+    inputs = {"package": meta["package"], "pinout": meta["pinout"], "parts": parts}
+    return hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()[:16]
 
 
 def check_id(sheet_id: str) -> str:
@@ -312,11 +377,10 @@ class SheetLibrary:
     def models_dir(self) -> Path:
         return self.directory / "models"
 
-    def model_sizes(self) -> dict[str, list[float]]:
-        """Bounding box size (x, height, z in mm) of each model, written by tools/build_models.py."""
-        index = self.models_dir / "index.json"
+    def part_sizes(self) -> dict[str, list[float]]:
+        """Size (x, height, z in mm) of each converted part, written by tools/build_models.py."""
         try:
-            return json.loads(index.read_text(encoding="utf-8"))
+            return json.loads((self.models_dir / "parts.json").read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return {}
 
@@ -336,17 +400,19 @@ class SheetLibrary:
         except UnicodeDecodeError as exc:
             result = SheetError(f"Encodage invalide : {exc}")
         if isinstance(result, Sheet):
-            self._attach_model_sizes(result)
+            self._attach_model(result)
         self._cache[sheet_id] = (mtime, result)
         return result
 
-    def _attach_model_sizes(self, sheet: Sheet) -> None:
-        sizes = self.model_sizes()
+    def _attach_model(self, sheet: Sheet) -> None:
+        model = self.models_dir / f"{sheet.id}.glb"
+        sheet.meta["model"] = f"models/{sheet.id}.glb" if model.is_file() else ""
+        sizes = self.part_sizes()
         for part in sheet.meta["parts"]:
-            name = Path(part["model"]).stem
-            if not (self.models_dir / f"{name}.glb").is_file():
-                sheet.warnings.append(f"Modèle 3D introuvable : {part['model']}.")
-            part["size"] = sizes.get(name)
+            if part["model"]:
+                part["size"] = sizes.get(part["model"])
+            else:
+                part["size"] = [part["width"], part["height"], part["length"]]
 
     def list(self) -> tuple[list[Sheet], list[dict[str, str]]]:
         sheets, errors = [], []
@@ -373,9 +439,9 @@ class SheetLibrary:
         return result
 
     def model_path(self, name: str) -> Path:
-        """Resolve a 3D model path, refusing anything outside the models/ directory."""
+        """Resolve a device model path, refusing anything outside the models/ directory."""
         name = name.removeprefix("models/")
         path = (self.models_dir / name).resolve()
-        if self.models_dir.resolve() not in path.parents or path.suffix.lower() not in MODEL_EXTENSIONS:
+        if self.models_dir.resolve() not in path.parents or path.suffix.lower() != ".glb":
             raise FileNotFoundError(name)
         return path

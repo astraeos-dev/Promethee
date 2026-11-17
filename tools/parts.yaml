@@ -1,9 +1,11 @@
-# Real 3D models used by the sheets, taken from the KiCad 3D library
+# Parts used by the device models, taken from the KiCad 3D library
 # (CC-BY-SA 4.0, see sheets/models/LICENSE.md) and converted by build_models.py.
+# An entry is either the STEP path, or { step, materials } where "materials"
+# replaces a KiCad colour ("r,g,b") by a material of build_models.py.
 source: https://gitlab.com/kicad/libraries/kicad-packages3D/-/raw
 revision: afa6aab16f43a736cd062b8c853863e753653921
 
-models:
+parts:
   # Packages
   dip-8: Package_DIP.3dshapes/DIP-8_W7.62mm.step
   to-92-inline: Package_TO_SOT_THT.3dshapes/TO-92_Inline.step
@@ -14,7 +16,9 @@ models:
   sot-223: Package_TO_SOT_SMD.3dshapes/SOT-223.step
   sot-23-5: Package_TO_SOT_SMD.3dshapes/SOT-23-5.step
   # Modules
-  esp32-wroom-32e: RF_Module.3dshapes/ESP32-WROOM-32E.step
+  esp32-wroom-32e:
+    step: RF_Module.3dshapes/ESP32-WROOM-32E.step
+    materials: { "29,29,29": tin }   # the RF shield is tin-plated steel
   # Connectors
   pin-header-1x04: Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x04_P2.54mm_Vertical.step
   pin-header-1x15: Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x15_P2.54mm_Vertical.step

@@ -24,12 +24,14 @@ def test_sheets_are_read_only(client):
 def test_bundled_sheets_and_models_are_served():
     with TestClient(create_app()) as client:
         sheet = client.get("/api/sheets/ne555").json()
-        model = sheet["parts"][0]["model"]
+        model = sheet["model"]
         response = client.get(f"/api/{model}")
         assert response.status_code == 200
         assert response.headers["content-type"] == "model/gltf-binary"
         assert response.content[:4] == b"glTF"
         assert client.head(f"/api/{model}").status_code == 200
+        compressed = client.get(f"/api/{model}", headers={"Accept-Encoding": "gzip"})
+        assert compressed.headers["content-encoding"] == "gzip"
 
 
 def test_inventory_lifecycle(client):

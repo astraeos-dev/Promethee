@@ -31,8 +31,10 @@ et *comment se branche cet appareil ?*
 Le stock vit dans une base SQLite, avec l'historique de chaque entrée et sortie. Les fiches
 techniques, une par appareil, sont **livrées avec les mises à jour** : un appareil manque, il
 suffit d'en [faire la demande](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml).
-Chaque fiche montre l'appareil en 3D à partir de **vrais modèles CAO** (bibliothèque KiCad), un
-schéma de brochage et un tableau des broches, reliés entre eux : survoler une broche l'éclaire partout.
+Chaque fiche montre l'appareil dans un **modèle 3D complet, construit pour lui** : circuit imprimé
+avec ses trous métallisés, ses pastilles, ses soudures et la sérigraphie de la vraie carte, composants
+réels issus de la bibliothèque KiCad. S'y ajoutent un schéma de brochage et un tableau des broches,
+reliés entre eux : survoler une broche l'éclaire partout.
 
 Tout fonctionne hors ligne : Three.js est inclus dans l'image, aucune ressource n'est chargée
 depuis Internet.
@@ -43,10 +45,10 @@ depuis Internet.
   historique des mouvements ; recherche et filtres ; import et export CSV (compatible tableur).
 - **Fiches techniques** : livrées avec chaque version ; nouvelles fiches et corrections
   demandées par des formulaires GitHub, accessibles depuis l'interface.
-- **Vue 3D réaliste** : vrais modèles des composants (modules, barrettes, connecteurs USB, puces,
-  boîtiers DIP et TO-92) issus de la bibliothèque KiCad, posés sur un circuit imprimé aux
-  dimensions de la carte, avec la sérigraphie des broches ; étiquettes, vues de dessus, de face
-  et de dessous.
+- **Modèle 3D de chaque appareil** : circuit imprimé aux dimensions réelles (vernis, sérigraphie
+  telle qu'imprimée sur la carte, trous métallisés, pastilles en or ou en étain, soudures) et
+  composants réels (modules, barrettes, connecteurs USB, puces, boîtiers DIP et TO-92) ; étiquettes,
+  vues de dessus, de face et de dessous ; modèle téléchargeable au format glTF (`.glb`).
 - **Brochage** : schéma 2D et tableau colorés par type (alimentation, I²C, SPI, UART…),
   avec fonctions alternatives et précautions ; filtre par type.
 - **Utilisation** : texte libre en Markdown (câblage, code, formules), caractéristiques et liens
@@ -106,7 +108,8 @@ docker compose up -d --build  # mettre à jour après un git pull
 
 Bouton **Demander une fiche** dans l'interface, ou directement
 [ce formulaire](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml) :
-nom de l'appareil, référence, lien vers la datasheet, et si possible des photos ou un modèle STEP.
+nom de l'appareil, référence, lien vers la datasheet et des photos. Le modèle 3D est réalisé
+d'après ces informations : rien d'autre à fournir.
 Une erreur dans une fiche existante se signale avec **Signaler une erreur**, sur la fiche.
 
 Le format des fiches, pour les préparer, est décrit dans [docs/sheet-format.md](docs/sheet-format.md).
@@ -142,9 +145,9 @@ publie les mêmes capteurs `sensor.promethee_*` que le module complémentaire.
 
 - Pas de comptes utilisateurs : à réserver au réseau local, ou à placer derrière un
   reverse proxy avec authentification.
-- Les cartes complètes (ESP32-DevKitC, Nano…) n'existent pas dans la bibliothèque KiCad : leur
-  circuit imprimé est dessiné aux bonnes dimensions et les vrais composants y sont placés d'après
-  la carte réelle. Les petits composants passifs sont représentatifs, pas exhaustifs.
+- Les modèles 3D sont fidèles au boîtier, aux dimensions, aux broches, aux composants principaux et
+  à la sérigraphie ; les pistes de cuivre ne sont pas dessinées et les petits composants passifs
+  sont représentatifs, pas exhaustifs.
 - Les fiches ne se modifient pas depuis l'interface : elles arrivent avec les mises à jour.
 
 ## Développement
@@ -154,11 +157,11 @@ python -m venv .venv && . .venv/bin/activate
 pip install -r requirements-dev.txt
 pytest                                   # tests
 uvicorn app.main:app --reload            # http://localhost:8000
-python tools/build_models.py             # convertit les modèles 3D de tools/models.yaml
+python tools/build_models.py             # construit les modèles 3D des fiches (sheets/models)
 ```
 
 Structure : `app/` (API FastAPI, stock SQLite, lecture des fiches, capteurs Home Assistant), `app/static/` (interface en
-JavaScript sans framework), `sheets/` (fiches et modèles 3D), `tools/` (conversion des modèles), `homeassistant-addon/` (module Home Assistant), `tests/`.
+JavaScript sans framework), `sheets/` (fiches et modèles 3D), `tools/` (construction des modèles 3D), `homeassistant-addon/` (module Home Assistant), `tests/`.
 Le code (identifiants, commentaires, API, base de données) est en anglais ; l'interface et la
 documentation sont en français.
 
@@ -169,9 +172,11 @@ par [.github/workflows/image.yml](.github/workflows/image.yml). Pour une nouvell
 ## Sources et crédits
 
 - [Three.js](https://threejs.org) r170, MIT, inclus dans `app/static/vendor/three/`.
-- Modèles 3D : [bibliothèque KiCad](https://gitlab.com/kicad/libraries/kicad-packages3D),
-  CC-BY-SA 4.0, convertis avec [cascadio](https://github.com/mikedh/cascadio) ; voir
+- Composants des modèles 3D : [bibliothèque KiCad](https://gitlab.com/kicad/libraries/kicad-packages3D),
+  CC-BY-SA 4.0, convertis avec [cascadio](https://github.com/mikedh/cascadio) ; modèles construits
+  avec [trimesh](https://trimesh.org) et [Shapely](https://shapely.readthedocs.io) ; voir
   [sheets/models/README.md](sheets/models/README.md).
+- Sérigraphie : police [DejaVu Sans](https://dejavu-fonts.github.io), licence libre, dans `tools/fonts/`.
 - [FastAPI](https://fastapi.tiangolo.com), [Uvicorn](https://www.uvicorn.org), [PyYAML](https://pyyaml.org),
   [Python-Markdown](https://python-markdown.github.io) : MIT ou BSD.
 - Brochages établis d'après les documentations d'Espressif, Arduino, Texas Instruments, Bosch

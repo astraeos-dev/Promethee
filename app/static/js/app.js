@@ -404,6 +404,7 @@ async function renderSheet(id) {
       </div>
       <div class="buttons">
         <button class="btn" id="add-to-stock" type="button">Ajouter au stock</button>
+        ${sheet.model ? `<a class="btn" href="api/${h(sheet.model)}" download="${h(id)}.glb" title="Modèle 3D au format glTF (.glb), lisible par Blender, la Visionneuse 3D de Windows…">Modèle 3D ↓</a>` : ""}
         <a class="btn" href="${sheetIssueUrl(sheet)}" target="_blank" rel="noopener">Signaler une erreur ↗</a>
       </div>
     </div>

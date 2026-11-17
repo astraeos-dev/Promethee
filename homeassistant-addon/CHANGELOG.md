@@ -3,8 +3,11 @@
 ## 0.4.0
 
 - **Vue 3D corrigée** : elle ne se chargeait pas (fichier Three.js absent de l'image 0.3.0).
-- **Vue 3D réaliste** : vrais modèles des composants (module ESP32-WROOM-32E, barrettes,
-  connecteurs USB, puces, boîtiers DIP-8 et TO-92) issus de la bibliothèque KiCad.
+- **Modèle 3D complet de chaque appareil** : circuit imprimé (vernis, sérigraphie de la vraie
+  carte, trous métallisés, pastilles, soudures) et composants réels issus de la bibliothèque KiCad
+  (module ESP32-WROOM-32E, barrettes, connecteurs USB, puces, boîtiers DIP-8 et TO-92) ;
+  téléchargeable depuis la fiche (`.glb`).
+- Vue 3D plus légère : affichage à la demande, fichiers compressés à l'envoi.
 - **Fiches livrées avec les mises à jour** : l'éditeur disparaît ; nouvelles fiches et corrections
   se demandent sur GitHub (boutons « Demander une fiche » et « Signaler une erreur »).
   Le dossier `sheets` de `/addon_configs` n'est plus utilisé.

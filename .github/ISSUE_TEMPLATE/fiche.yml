@@ -7,7 +7,8 @@ body:
     attributes:
       value: |
         La fiche sera ajoutée dans une prochaine mise à jour de Prométhée, avec son brochage,
-        sa vue 3D et un mode d'emploi. Plus les informations sont précises, plus vite elle arrive.
+        un mode d'emploi et un modèle 3D de l'appareil, réalisé d'après sa fiche technique et vos
+        photos : pas besoin d'en fournir un. Plus les informations sont précises, plus vite elle arrive.
   - type: input
     id: device
     attributes:
@@ -43,17 +44,18 @@ body:
     validations:
       required: true
   - type: textarea
-    id: model
-    attributes:
-      label: Modèle 3D (facultatif)
-      description: |
-        Lien vers un modèle STEP du fabricant, ou nom du modèle dans la bibliothèque KiCad.
-        Sans modèle, la vue est assemblée à partir de composants KiCad.
-  - type: textarea
     id: photos
     attributes:
-      label: Photos (facultatif)
-      description: Dessus et dessous de la carte, avec les inscriptions lisibles. Glisser les images ici.
+      label: Photos
+      description: |
+        Dessus et dessous, de face, avec les inscriptions lisibles : elles servent à reproduire
+        l'appareil fidèlement en 3D (composants, sérigraphie, couleur). Glisser les images ici.
+  - type: input
+    id: dimensions
+    attributes:
+      label: Dimensions (facultatif)
+      description: Longueur × largeur en mm, si elles ne figurent pas dans la fiche technique.
+      placeholder: 52 × 28 mm
   - type: textarea
     id: usage
     attributes:
