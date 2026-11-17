@@ -29,5 +29,7 @@ jobs:
       - name: Container starts
         run: |
           docker run -d --name promethee -p 8000:8000 promethee:ci
-          for i in $(seq 1 20); do curl -fs localhost:8000/api/health && exit 0; sleep 1; done
-          docker logs promethee; exit 1
+          for i in $(seq 1 20); do curl -fs localhost:8000/api/health && break; sleep 1; done
+          curl -fs localhost:8000/api/health || { docker logs promethee; exit 1; }
+          # Static files the 3D view needs must be in the image.
+          curl -fsI localhost:8000/static/vendor/three/build/three.module.min.js
