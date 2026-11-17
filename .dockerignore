@@ -12,3 +12,5 @@ homeassistant-addon
 **/__pycache__
 *.md
 !sheets/*.md
+!sheets/models/*.md
+tools

@@ -1,6 +1,7 @@
 ---
-# Modèle de fiche Prométhée. Copier ce fichier sous le nom <identifiant>.md
-# (minuscules, chiffres et tirets), puis le compléter. Format : docs/sheet-format.md
+# Modèle de fiche Prométhée, pour préparer une fiche livrée avec l'application.
+# Copier sous le nom <identifiant>.md (minuscules, chiffres et tirets), puis construire son
+# modèle 3D : python tools/build_models.py <identifiant>. Format : docs/sheet-format.md
 name: Nouvel appareil
 category: Divers
 manufacturer: ""
@@ -17,7 +18,7 @@ links:
   - title: Fiche technique (datasheet)
     url: https://exemple.org/datasheet.pdf
 
-# Vue 3D générée à partir du boîtier et du brochage.
+# Boîtier : circuit imprimé ou corps du composant.
 # type : board | module | dip | to92. Dimensions en millimètres, vue de dessus :
 # width est horizontale, length verticale.
 package:
@@ -25,11 +26,10 @@ package:
   length: 40
   width: 20
   thickness: 1.6
-  color: "#1d5c3a"
-
-# Pour remplacer la vue générée par un vrai modèle (.glb, .gltf ou .stl),
-# déposer le fichier dans sheets/models/ et indiquer son nom ici.
-# model3d: models/mon-appareil.glb
+  color: "#1d5c3a"       # vernis
+  finish: gold           # pastilles : gold ou tin
+  silkscreen:            # textes imprimés en plus des noms de broches
+    - { text: "MON-MODULE", x: 10, y: 36, size: 1.2 }
 
 pinout:
   pitch: 2.54
@@ -39,14 +39,17 @@ pinout:
       pins:                 # de haut en bas (de gauche à droite pour top et bottom)
         - { n: 1, name: VCC, type: power, description: "Alimentation 3,3 V" }
         - { n: 2, name: GND, type: ground }
-        - { n: 3, name: SDA, type: i2c, functions: [GPIO4] }
+        - { n: 3, name: SDA, silkscreen: D2, type: i2c, functions: [GPIO4] }
         - { n: 4, name: SCL, type: i2c, functions: [GPIO5] }
 # Types de broche : power, ground, gpio, analog, pwm, i2c, spi, uart,
 # control, reserved, nc, other.
 
-# Composants visibles sur la carte (facultatif). x et y : centre, depuis le coin haut gauche.
-components:
-  - { name: Puce, x: 12, y: 15, width: 6, length: 6, height: 1, label: "IC" }
+# Pièces du modèle 3D : modèle KiCad (tools/parts.yaml) ou forme simple.
+# x et y : centre de la pièce, depuis le coin haut gauche.
+parts:
+  - { name: Barrette, model: pin-header-1x04, x: 1.27, y: 20, side: bottom }
+  - { name: Puce, model: sot-23-5, x: 12, y: 15, label: "IC" }
+  - { name: Relais, shape: box, x: 12, y: 28, width: 10, length: 15, height: 10, color: "#1f5fc4" }
 ---
 
 ## Présentation

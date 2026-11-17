@@ -7,10 +7,9 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8000"
-    # Files created in ./sheets and ./db will belong to this user.
+    # Files created in ./db will belong to this user.
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
-      - ./sheets:/var/lib/promethee/sheets   # one .md file per device, editable by hand
-      - ./db:/var/lib/promethee/db           # SQLite inventory database
+      - ./db:/var/lib/promethee/db   # SQLite inventory database
     environment:
       TZ: Europe/Paris

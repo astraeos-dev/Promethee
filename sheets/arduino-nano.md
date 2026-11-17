@@ -25,6 +25,17 @@ package:
   length: 45
   width: 18
   color: "#1c4f8c"
+  finish: gold
+  corner_radius: 0.5
+  holes:   # ICSP connector, not fitted
+    - { x: 6.46, y: 40.9, drill: 1.0, pad: 1.7, square: true }
+    - { x: 9.0, y: 40.9, drill: 1.0, pad: 1.7 }
+    - { x: 11.54, y: 40.9, drill: 1.0, pad: 1.7 }
+    - { x: 6.46, y: 43.44, drill: 1.0, pad: 1.7 }
+    - { x: 9.0, y: 43.44, drill: 1.0, pad: 1.7 }
+    - { x: 11.54, y: 43.44, drill: 1.0, pad: 1.7 }
+  silkscreen:
+    - { text: ICSP, x: 9, y: 38.7, size: 0.9 }
 
 pinout:
   pitch: 2.54
@@ -36,7 +47,7 @@ pinout:
       pins:
         - { n: 16, name: D13, type: spi, functions: [SCK, LED], description: "LED intégrée" }
         - { n: 17, name: 3V3, type: power, description: "Sortie 3,3 V du pont USB (50 mA au plus)" }
-        - { n: 18, name: AREF, type: analog, description: "Référence externe du convertisseur" }
+        - { n: 18, name: AREF, silkscreen: REF, type: analog, description: "Référence externe du convertisseur" }
         - { n: 19, name: A0, type: analog, functions: [D14] }
         - { n: 20, name: A1, type: analog, functions: [D15] }
         - { n: 21, name: A2, type: analog, functions: [D16] }
@@ -70,12 +81,23 @@ pinout:
         - { n: 2, name: RX0, type: uart, functions: [D0], description: "Partagée avec le port USB" }
         - { n: 1, name: TX1, type: uart, functions: [D1], description: "Partagée avec le port USB" }
 
-components:
-  - { name: Connecteur mini-USB, x: 9, y: 2.6, width: 7.7, length: 7.2, height: 3.9, color: "#c8ccd2" }
-  - { name: Microcontrôleur ATmega328P, x: 9, y: 25, width: 7, length: 7, height: 1.2, color: "#202227", label: "ATMEGA328P" }
-  - { name: Bouton reset, x: 9, y: 13.5, width: 3.5, length: 6, height: 2.2, color: "#d9dbe0" }
-  - { name: Quartz 16 MHz, x: 9, y: 34, width: 3.2, length: 5, height: 1, color: "#c8ccd2" }
-  - { name: Connecteur ICSP, x: 9, y: 41.5, width: 7.6, length: 5.1, height: 1, color: "#202227" }
+# Pièces du modèle 3D (tools/parts.yaml), placées par leur centre.
+parts:
+  - { name: Connecteur mini-USB, model: usb-mini-b, x: 9, y: 3.5, color: "#c8ccd2" }
+  - { name: Barrette J1, model: pin-header-1x15, x: 1.38, y: 22.48, side: bottom }
+  - { name: Barrette J2, model: pin-header-1x15, x: 16.62, y: 22.48, side: bottom }
+  - { name: Microcontrôleur ATmega328P, model: tqfp-32, x: 9, y: 26.5, rotation: 45, label: "ATMEGA328P" }
+  - { name: Bouton reset, model: button-kmr2, x: 9, y: 14.5, color: "#c8ccd2" }
+  - { name: Quartz 16 MHz, model: crystal-3225, x: 9, y: 34.5 }
+  - { name: LED L, model: led-0805, x: 5.6, y: 31, rotation: 90 }
+  - { name: LED PWR, model: led-0805, x: 12.4, y: 31, rotation: 90 }
+  - { name: LED TX, model: led-0805, x: 5.6, y: 35, rotation: 90 }
+  - { name: LED RX, model: led-0805, x: 12.4, y: 35, rotation: 90 }
+  - { name: Condensateur, model: c-0805, x: 6, y: 19.5, rotation: 90 }
+  - { name: Condensateur, model: c-0805, x: 12, y: 19.5, rotation: 90 }
+  - { name: Résistance, model: r-0603, x: 11.5, y: 38 }
+  - { name: Pont USB-série FT232RL, model: ssop-28, x: 9, y: 22, side: bottom }
+  - { name: Régulateur 5 V, model: sot-223, x: 9, y: 37, side: bottom }
 ---
 
 ## Présentation

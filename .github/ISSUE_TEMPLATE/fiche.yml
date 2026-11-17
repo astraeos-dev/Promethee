@@ -1,0 +1,63 @@
+name: Demander une fiche
+description: Ajouter la fiche technique d'un composant, d'une carte ou d'un module.
+title: "Fiche : "
+labels: ["fiche"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        La fiche sera ajoutée dans une prochaine mise à jour de Prométhée, avec son brochage,
+        un mode d'emploi et un modèle 3D de l'appareil, réalisé d'après sa fiche technique et vos
+        photos : pas besoin d'en fournir un. Plus les informations sont précises, plus vite elle arrive.
+  - type: input
+    id: device
+    attributes:
+      label: Appareil
+      description: Nom courant et, si possible, la version de la carte.
+      placeholder: ESP32-C3 SuperMini, module relais 2 canaux, LM317…
+    validations:
+      required: true
+  - type: input
+    id: part_number
+    attributes:
+      label: Fabricant et référence
+      placeholder: Espressif ESP32-C3FH4, Texas Instruments LM317T…
+  - type: dropdown
+    id: category
+    attributes:
+      label: Catégorie
+      options:
+        - Carte de développement
+        - Module (capteur, afficheur, communication…)
+        - Circuit intégré
+        - Transistor, régulateur
+        - Composant passif
+        - Autre
+    validations:
+      required: true
+  - type: textarea
+    id: links
+    attributes:
+      label: Liens
+      description: Fiche technique (datasheet), page du vendeur, schéma, brochage publié par le fabricant.
+      placeholder: https://…
+    validations:
+      required: true
+  - type: textarea
+    id: photos
+    attributes:
+      label: Photos
+      description: |
+        Dessus et dessous, de face, avec les inscriptions lisibles : elles servent à reproduire
+        l'appareil fidèlement en 3D (composants, sérigraphie, couleur). Glisser les images ici.
+  - type: input
+    id: dimensions
+    attributes:
+      label: Dimensions (facultatif)
+      description: Longueur × largeur en mm, si elles ne figurent pas dans la fiche technique.
+      placeholder: 52 × 28 mm
+  - type: textarea
+    id: usage
+    attributes:
+      label: Ce que vous voulez y trouver
+      description: Montage type, code d'exemple, précautions, compatibilité 3,3 V / 5 V…

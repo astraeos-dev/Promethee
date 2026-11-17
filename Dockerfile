@@ -8,24 +8,22 @@ LABEL org.opencontainers.image.source="https://github.com/astraeos-dev/Promethee
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PROMETHEE_SHEETS_DIR=/var/lib/promethee/sheets \
-    PROMETHEE_DB_DIR=/var/lib/promethee/db \
-    PROMETHEE_EXAMPLES_DIR=/app/examples
+    PROMETHEE_DB_DIR=/var/lib/promethee/db
 
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY app ./app
-# Example sheets, copied into the sheets directory on first start when it is empty.
-COPY sheets ./examples
+# Device sheets and their 3D models ship with the image (read-only).
+COPY sheets ./sheets
 
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN useradd --uid 1000 --create-home promethee \
- && mkdir -p /var/lib/promethee/sheets /var/lib/promethee/db \
+ && mkdir -p /var/lib/promethee/db \
  && chown -R promethee:promethee /var/lib/promethee
 
-VOLUME ["/var/lib/promethee/sheets", "/var/lib/promethee/db"]
+VOLUME ["/var/lib/promethee/db"]
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \

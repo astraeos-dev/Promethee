@@ -27,6 +27,11 @@ package:
   width: 27.9
   thickness: 1.6
   color: "#16181d"
+  finish: gold
+  corner_radius: 0.8
+  silkscreen:
+    - { text: EN, x: 7.2, y: 47.1, size: 1.0 }
+    - { text: Boot, x: 20.7, y: 47.1, size: 1.0 }
 
 pinout:
   pitch: 2.54
@@ -37,19 +42,19 @@ pinout:
       pins:
         - { n: 1, name: 3V3, type: power, description: "Sortie du régulateur 3,3 V (600 mA au plus)" }
         - { n: 2, name: EN, type: control, description: "Activation de la puce ; reset à l'état bas" }
-        - { n: 3, name: GPIO36, type: analog, functions: [ADC1_CH0, SENSOR_VP], description: "Entrée seule, sans résistance de tirage" }
-        - { n: 4, name: GPIO39, type: analog, functions: [ADC1_CH3, SENSOR_VN], description: "Entrée seule, sans résistance de tirage" }
-        - { n: 5, name: GPIO34, type: analog, functions: [ADC1_CH6], description: "Entrée seule" }
-        - { n: 6, name: GPIO35, type: analog, functions: [ADC1_CH7], description: "Entrée seule" }
-        - { n: 7, name: GPIO32, type: gpio, functions: [ADC1_CH4, TOUCH9, XTAL32_P] }
-        - { n: 8, name: GPIO33, type: gpio, functions: [ADC1_CH5, TOUCH8, XTAL32_N] }
-        - { n: 9, name: GPIO25, type: analog, functions: [DAC1, ADC2_CH8] }
-        - { n: 10, name: GPIO26, type: analog, functions: [DAC2, ADC2_CH9] }
-        - { n: 11, name: GPIO27, type: gpio, functions: [ADC2_CH7, TOUCH7] }
-        - { n: 12, name: GPIO14, type: spi, functions: [HSPI_CLK, ADC2_CH6, TOUCH6], description: "Émet un signal PWM au démarrage" }
-        - { n: 13, name: GPIO12, type: spi, functions: [HSPI_MISO, ADC2_CH5, TOUCH5], description: "Broche de configuration (MTDI) : doit être basse au démarrage" }
+        - { n: 3, name: GPIO36, silkscreen: SVP, type: analog, functions: [ADC1_CH0, SENSOR_VP], description: "Entrée seule, sans résistance de tirage" }
+        - { n: 4, name: GPIO39, silkscreen: SVN, type: analog, functions: [ADC1_CH3, SENSOR_VN], description: "Entrée seule, sans résistance de tirage" }
+        - { n: 5, name: GPIO34, silkscreen: IO34, type: analog, functions: [ADC1_CH6], description: "Entrée seule" }
+        - { n: 6, name: GPIO35, silkscreen: IO35, type: analog, functions: [ADC1_CH7], description: "Entrée seule" }
+        - { n: 7, name: GPIO32, silkscreen: IO32, type: gpio, functions: [ADC1_CH4, TOUCH9, XTAL32_P] }
+        - { n: 8, name: GPIO33, silkscreen: IO33, type: gpio, functions: [ADC1_CH5, TOUCH8, XTAL32_N] }
+        - { n: 9, name: GPIO25, silkscreen: IO25, type: analog, functions: [DAC1, ADC2_CH8] }
+        - { n: 10, name: GPIO26, silkscreen: IO26, type: analog, functions: [DAC2, ADC2_CH9] }
+        - { n: 11, name: GPIO27, silkscreen: IO27, type: gpio, functions: [ADC2_CH7, TOUCH7] }
+        - { n: 12, name: GPIO14, silkscreen: IO14, type: spi, functions: [HSPI_CLK, ADC2_CH6, TOUCH6], description: "Émet un signal PWM au démarrage" }
+        - { n: 13, name: GPIO12, silkscreen: IO12, type: spi, functions: [HSPI_MISO, ADC2_CH5, TOUCH5], description: "Broche de configuration (MTDI) : doit être basse au démarrage" }
         - { n: 14, name: GND, type: ground }
-        - { n: 15, name: GPIO13, type: spi, functions: [HSPI_MOSI, ADC2_CH4, TOUCH4] }
+        - { n: 15, name: GPIO13, silkscreen: IO13, type: spi, functions: [HSPI_MOSI, ADC2_CH4, TOUCH4] }
         - { n: 16, name: SD2, type: reserved, functions: [GPIO9], description: "Reliée à la flash SPI : ne pas utiliser" }
         - { n: 17, name: SD3, type: reserved, functions: [GPIO10], description: "Reliée à la flash SPI : ne pas utiliser" }
         - { n: 18, name: CMD, type: reserved, functions: [GPIO11], description: "Reliée à la flash SPI : ne pas utiliser" }
@@ -59,32 +64,41 @@ pinout:
       start: 4.6
       pins:
         - { n: 1, name: GND, type: ground }
-        - { n: 2, name: GPIO23, type: spi, functions: [VSPI_MOSI] }
-        - { n: 3, name: GPIO22, type: i2c, functions: [SCL, U0RTS], description: "SCL par défaut dans Arduino" }
-        - { n: 4, name: TX0, type: uart, functions: [GPIO1], description: "Reliée au pont USB-série" }
-        - { n: 5, name: RX0, type: uart, functions: [GPIO3], description: "Reliée au pont USB-série" }
-        - { n: 6, name: GPIO21, type: i2c, functions: [SDA], description: "SDA par défaut dans Arduino" }
+        - { n: 2, name: GPIO23, silkscreen: IO23, type: spi, functions: [VSPI_MOSI] }
+        - { n: 3, name: GPIO22, silkscreen: IO22, type: i2c, functions: [SCL, U0RTS], description: "SCL par défaut dans Arduino" }
+        - { n: 4, name: TX0, silkscreen: TXD0, type: uart, functions: [GPIO1], description: "Reliée au pont USB-série" }
+        - { n: 5, name: RX0, silkscreen: RXD0, type: uart, functions: [GPIO3], description: "Reliée au pont USB-série" }
+        - { n: 6, name: GPIO21, silkscreen: IO21, type: i2c, functions: [SDA], description: "SDA par défaut dans Arduino" }
         - { n: 7, name: GND, type: ground }
-        - { n: 8, name: GPIO19, type: spi, functions: [VSPI_MISO, U0CTS] }
-        - { n: 9, name: GPIO18, type: spi, functions: [VSPI_CLK] }
-        - { n: 10, name: GPIO5, type: spi, functions: [VSPI_CS], description: "Broche de configuration : haute au démarrage" }
-        - { n: 11, name: GPIO17, type: uart, functions: [U2TXD] }
-        - { n: 12, name: GPIO16, type: uart, functions: [U2RXD] }
-        - { n: 13, name: GPIO4, type: gpio, functions: [ADC2_CH0, TOUCH0] }
-        - { n: 14, name: GPIO0, type: control, functions: [BOOT, ADC2_CH1, TOUCH1], description: "Bouton BOOT : basse au démarrage = mode programmation" }
-        - { n: 15, name: GPIO2, type: gpio, functions: [ADC2_CH2, TOUCH2], description: "Broche de configuration : basse ou flottante au démarrage" }
-        - { n: 16, name: GPIO15, type: spi, functions: [HSPI_CS, ADC2_CH3, TOUCH3], description: "Broche de configuration (MTDO)" }
+        - { n: 8, name: GPIO19, silkscreen: IO19, type: spi, functions: [VSPI_MISO, U0CTS] }
+        - { n: 9, name: GPIO18, silkscreen: IO18, type: spi, functions: [VSPI_CLK] }
+        - { n: 10, name: GPIO5, silkscreen: IO5, type: spi, functions: [VSPI_CS], description: "Broche de configuration : haute au démarrage" }
+        - { n: 11, name: GPIO17, silkscreen: IO17, type: uart, functions: [U2TXD] }
+        - { n: 12, name: GPIO16, silkscreen: IO16, type: uart, functions: [U2RXD] }
+        - { n: 13, name: GPIO4, silkscreen: IO4, type: gpio, functions: [ADC2_CH0, TOUCH0] }
+        - { n: 14, name: GPIO0, silkscreen: IO0, type: control, functions: [BOOT, ADC2_CH1, TOUCH1], description: "Bouton BOOT : basse au démarrage = mode programmation" }
+        - { n: 15, name: GPIO2, silkscreen: IO2, type: gpio, functions: [ADC2_CH2, TOUCH2], description: "Broche de configuration : basse ou flottante au démarrage" }
+        - { n: 16, name: GPIO15, silkscreen: IO15, type: spi, functions: [HSPI_CS, ADC2_CH3, TOUCH3], description: "Broche de configuration (MTDO)" }
         - { n: 17, name: SD1, type: reserved, functions: [GPIO8], description: "Reliée à la flash SPI : ne pas utiliser" }
         - { n: 18, name: SD0, type: reserved, functions: [GPIO7], description: "Reliée à la flash SPI : ne pas utiliser" }
         - { n: 19, name: CLK, type: reserved, functions: [GPIO6], description: "Reliée à la flash SPI : ne pas utiliser" }
 
-components:
-  - { name: Module ESP32-WROOM-32E, x: 13.95, y: 12.2, width: 18, length: 25.5, height: 3.1, color: "#b9bec6", label: "ESP32-WROOM-32E" }
-  - { name: Pont USB-série CP2102N, x: 13.95, y: 38.5, width: 4, length: 4, height: 0.9, color: "#202227", label: "CP2102N" }
-  - { name: Régulateur AMS1117, x: 13.95, y: 31.5, width: 6.5, length: 3.5, height: 1.6, color: "#202227", label: "AMS1117" }
-  - { name: Bouton EN, x: 6.5, y: 49.5, width: 3.5, length: 4.5, height: 1.8, color: "#d9dbe0" }
-  - { name: Bouton BOOT, x: 21.4, y: 49.5, width: 3.5, length: 4.5, height: 1.8, color: "#d9dbe0" }
-  - { name: Connecteur micro-USB, x: 13.95, y: 52.6, width: 7.6, length: 5.4, height: 2.7, color: "#c8ccd2" }
+# Pièces du modèle 3D (tools/parts.yaml), placées par leur centre.
+parts:
+  - { name: Module ESP32-WROOM-32E, model: esp32-wroom-32e, x: 13.95, y: 12.75, color: "#c8ccd2", label: "ESP32-WROOM-32E" }
+  - { name: Barrette J2, model: pin-header-1x19, x: 1.27, y: 27.46, side: bottom }
+  - { name: Barrette J3, model: pin-header-1x19, x: 26.63, y: 27.46, side: bottom }
+  - { name: Connecteur micro-USB, model: usb-micro-b, x: 13.95, y: 52.2, color: "#c8ccd2" }
+  - { name: Pont USB-série CP2102N, model: qfn-28-5x5, x: 19.5, y: 38 }
+  - { name: Régulateur AMS1117, model: sot-223, x: 10.5, y: 40.5 }
+  - { name: Bouton EN, model: button-kmr2, x: 7.2, y: 50.3, rotation: 90, color: "#c8ccd2" }
+  - { name: Bouton BOOT, model: button-kmr2, x: 20.7, y: 50.3, rotation: 90, color: "#c8ccd2" }
+  - { name: LED d'alimentation, model: led-0603, x: 21.5, y: 31.5 }
+  - { name: Résistance de la LED, model: r-0603, x: 21.5, y: 33.5 }
+  - { name: Condensateur, model: c-0603, x: 13.95, y: 30.5 }
+  - { name: Condensateur, model: c-0603, x: 15.5, y: 38, rotation: 90 }
+  - { name: Condensateur d'entrée, model: c-0805, x: 11.2, y: 45.6 }
+  - { name: Condensateur de sortie, model: c-0805, x: 10.5, y: 35.6 }
 ---
 
 ## Présentation

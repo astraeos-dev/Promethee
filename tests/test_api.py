@@ -3,9 +3,6 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 
-SHEET = "---\nname: Capteur essai\ncategory: Capteur\n---\nTexte.\n"
-
-
 @pytest.fixture
 def client(tmp_path):
     with TestClient(create_app(tmp_path / "sheets", tmp_path / "inventory.sqlite3")) as c:
@@ -17,15 +14,24 @@ def test_health_and_ui(client):
     assert "Prométhée" in client.get("/").text
 
 
-def test_sheet_lifecycle(client):
-    response = client.post("/api/sheets", json={"source": SHEET})
-    assert response.status_code == 201 and response.json()["id"] == "capteur-essai"
-    assert client.post("/api/sheets", json={"source": SHEET}).status_code == 409
-    assert client.get("/api/sheets/capteur-essai").json()["category"] == "Capteur"
-    assert client.put("/api/sheets/capteur-essai", json={"source": "invalid"}).status_code == 422
-    assert client.post("/api/sheets/preview", json={"source": SHEET}).json()["name"] == "Capteur essai"
-    assert client.delete("/api/sheets/capteur-essai").status_code == 204
-    assert client.get("/api/sheets/capteur-essai").status_code == 404
+def test_sheets_are_read_only(client):
+    assert client.get("/api/sheets").json() == {"sheets": [], "errors": []}
+    assert client.get("/api/sheets/nothing").status_code == 404
+    assert client.post("/api/sheets", json={"source": "---\nname: x\n---\n"}).status_code == 405
+    assert client.get("/api/about").json()["repository"].startswith("https://github.com/")
+
+
+def test_bundled_sheets_and_models_are_served():
+    with TestClient(create_app()) as client:
+        sheet = client.get("/api/sheets/ne555").json()
+        model = sheet["model"]
+        response = client.get(f"/api/{model}")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "model/gltf-binary"
+        assert response.content[:4] == b"glTF"
+        assert client.head(f"/api/{model}").status_code == 200
+        compressed = client.get(f"/api/{model}", headers={"Accept-Encoding": "gzip"})
+        assert compressed.headers["content-encoding"] == "gzip"
 
 
 def test_inventory_lifecycle(client):

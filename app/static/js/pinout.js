@@ -44,21 +44,37 @@ export function createPinoutDiagram(container, sheet, { onHover = () => {} } = {
     svg += `<rect x="${X(0)}" y="${Y(0)}" width="${pkg.width * scale}" height="${pkg.length * scale}" rx="${Math.min(10, 1.2 * scale)}" fill="${pkg.color}" stroke="#3a4560" stroke-width="1.5"/>`;
   }
 
-  for (const c of sheet.components || []) {
-    const cx = X(c.x), cy = Y(c.y), w = c.width * scale, l = c.length * scale;
-    svg += `<g opacity=".92"><title>${h(c.name)}</title>`;
-    svg += c.shape === "cylinder"
-      ? `<circle cx="${cx}" cy="${cy}" r="${w / 2}" fill="${c.color}" stroke="rgba(0,0,0,.4)"/>`
-      : `<rect x="${cx - w / 2}" y="${cy - l / 2}" width="${w}" height="${l}" rx="2" fill="${c.color}" stroke="rgba(0,0,0,.4)"/>`;
-    if (c.label) {
-      const vertical = l > w * 1.6;
-      const room = vertical ? l : w;
-      const size = Math.min(12, (room * 0.85) / (c.label.length * 0.62), (vertical ? w : l) * 0.4);
-      if (size >= 5) {
-        svg += `<text x="${cx}" y="${cy}" fill="${isLightColor(c.color) ? "#24262c" : "#d5d8de"}" font-size="${size}" font-weight="600" text-anchor="middle" dominant-baseline="middle" ${vertical ? `transform="rotate(90 ${cx} ${cy})"` : ""}>${h(c.label)}</text>`;
+  // Other holes (connectors not fitted, mounting holes).
+  for (const hole of pkg.holes || []) {
+    const r = Math.max(hole.pad, hole.drill) * scale / 2;
+    svg += hole.square
+      ? `<rect x="${X(hole.x) - r}" y="${Y(hole.y) - r}" width="${2 * r}" height="${2 * r}" fill="#c9a24e"/>`
+      : `<circle cx="${X(hole.x)}" cy="${Y(hole.y)}" r="${r}" fill="${hole.pad ? "#c9a24e" : "none"}" stroke="#3a4560"/>`;
+    svg += `<circle cx="${X(hole.x)}" cy="${Y(hole.y)}" r="${hole.drill * scale / 2}" fill="#0b0f17"/>`;
+  }
+
+  // Parts seen from above, to scale (sizes come from the server: sheets/models/parts.json).
+  // On a DIP or TO-92 the part is the package itself, already drawn.
+  if (pkg.type === "board" || pkg.type === "module") {
+    for (const part of sheet.parts || []) {
+      if (!part.size || part.side === "bottom") continue;
+      const quarterTurn = Math.round(part.rotation / 90) % 2 !== 0;
+      const turned = Math.abs(part.rotation % 90) > 1; // e.g. a QFP set at 45°
+      const [sx, , sz] = part.size;
+      const w = (quarterTurn ? sz : sx) * scale, l = (quarterTurn ? sx : sz) * scale;
+      const cx = X(part.x), cy = Y(part.y);
+      const transform = turned ? `transform="rotate(${-part.rotation} ${cx} ${cy})"` : "";
+      svg += `<g opacity=".95"><title>${h(part.name)}</title>`;
+      svg += `<rect x="${cx - w / 2}" y="${cy - l / 2}" width="${w}" height="${l}" rx="1.5" fill="${part.color}" stroke="rgba(0,0,0,.45)" ${transform}/>`;
+      if (part.label) {
+        const vertical = l > w * 1.4 && !turned;
+        const size = Math.min(12, ((vertical ? l : w) * 0.85) / (part.label.length * 0.62), (vertical ? w : l) * 0.35);
+        if (size >= 5) {
+          svg += `<text x="${cx}" y="${cy}" fill="${isLightColor(part.color) ? "#4a4e57" : "#d5d8de"}" font-size="${size}" font-weight="600" text-anchor="middle" dominant-baseline="middle" ${vertical ? `transform="rotate(90 ${cx} ${cy})"` : ""}>${h(part.label)}</text>`;
+        }
       }
+      svg += "</g>";
     }
-    svg += "</g>";
   }
 
   // Pins and their labels

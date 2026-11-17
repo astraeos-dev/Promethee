@@ -1,0 +1,22 @@
+{
+ "arduino-nano": {
+  "inputs": "e88df3385186382d",
+  "builder": 6
+ },
+ "bme280-module": {
+  "inputs": "ae698d507cbc9c28",
+  "builder": 6
+ },
+ "esp32-devkitc-v4": {
+  "inputs": "dac8fc5d81e505ff",
+  "builder": 6
+ },
+ "ne555": {
+  "inputs": "db9afa87c00b1d0b",
+  "builder": 6
+ },
+ "pn2222a": {
+  "inputs": "1e64fb05a4dbace8",
+  "builder": 6
+ }
+}

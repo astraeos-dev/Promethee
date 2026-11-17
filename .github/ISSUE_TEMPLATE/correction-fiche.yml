@@ -1,0 +1,25 @@
+name: Corriger une fiche
+description: Signaler une erreur dans une fiche existante (brochage, caractéristiques, vue 3D, texte).
+title: "Correction : "
+labels: ["fiche", "correction"]
+body:
+  - type: input
+    id: sheet
+    attributes:
+      label: Fiche concernée
+      description: Identifiant affiché dans l'adresse de la fiche (#/sheet/…).
+      placeholder: esp32-devkitc-v4
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Erreur constatée
+      placeholder: La broche 3 est notée GPIO36, c'est GPIO39 sur ma carte.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: Lien vers la documentation ou photo qui montre la bonne information.
