@@ -8,10 +8,12 @@
 [![Tests](https://github.com/astraeos-dev/Promethee/actions/workflows/tests.yml/badge.svg)](https://github.com/astraeos-dev/Promethee/actions/workflows/tests.yml)
 [![Licence MIT](https://img.shields.io/github/license/astraeos-dev/Promethee?label=licence)](LICENSE)
 ![Docker](https://img.shields.io/badge/Docker-Compose%20v2-2496ed?logo=docker&logoColor=white)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-module-18bcf2?logo=homeassistant&logoColor=white)
 
 <a href="https://buymeacoffee.com/gregorychau"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="40"></a>
 
-**Installer** : `docker compose up -d`, puis ouvrir <http://localhost:8080>. Une idée, un problème ?
+**Installer** : dans Home Assistant, ajouter ce dépôt aux modules complémentaires ;
+ou bien `docker compose up -d`, puis ouvrir <http://localhost:8080>. Une idée, un problème ?
 [Ouvrir une demande](https://github.com/astraeos-dev/Promethee/issues/new/choose).
 
 **Projet actif** · un des projets d'Astraeos : [site web](https://astraeos-dev.github.io/personnal-site/)
@@ -48,11 +50,27 @@ depuis Internet.
   avec fonctions alternatives et précautions ; filtre par type.
 - **Utilisation** : texte libre en Markdown (câblage, code, formules), caractéristiques et liens
   vers les datasheets.
+- **Home Assistant** : module complémentaire avec l'interface dans la barre latérale, et capteurs
+  (pièces en stock, articles à réapprovisionner) pour les tableaux de bord et les notifications.
 - **Lien stock ↔ fiche** : chaque article peut pointer vers sa fiche, qui affiche la quantité en stock.
 
 <p align="center"><img src="assets/captures/brochage.png" alt="Schéma de brochage et tableau des broches"></p>
 
 ## Installation
+
+### Dans Home Assistant (module complémentaire)
+
+Prérequis : Home Assistant OS ou Supervised, sur aarch64 (Raspberry Pi 4 et 5) ou amd64.
+
+1. **Paramètres › Modules complémentaires › Boutique › ⋮ › Dépôts**, ajouter
+   `https://github.com/astraeos-dev/Promethee`.
+2. Installer **Prométhée**, le démarrer et cocher **Afficher dans la barre latérale**.
+
+L'interface s'ouvre dans Home Assistant (Ingress), sans port à ouvrir. Les fiches sont dans
+`/addon_configs/<id>_promethee/fiches/`, accessibles avec Studio Code Server ou Samba. Capteurs,
+exemples d'automatisation et de carte : [promethee/DOCS.md](promethee/DOCS.md).
+
+### Avec Docker Compose
 
 Prérequis : Docker avec Compose v2.
 
@@ -133,6 +151,12 @@ L'API REST est documentée sur <http://localhost:8080/api/docs>.
 | `PROMETHEE_FICHES`   | `/donnees/fiches`  | dossier des fiches                     |
 | `PROMETHEE_DATA`     | `/donnees/base`    | dossier de la base SQLite              |
 | `PROMETHEE_MODELE_MAX` | `31457280`       | taille maximale d'un modèle 3D (octets) |
+| `PROMETHEE_HA_URL`   | —                  | Home Assistant à informer, ex. `http://192.168.1.10:8123` |
+| `PROMETHEE_HA_TOKEN` | —                  | jeton d'accès longue durée (profil Home Assistant › Sécurité) |
+| `PROMETHEE_HA`       | activé             | `off` pour ne publier aucun capteur |
+
+Avec `PROMETHEE_HA_URL` et `PROMETHEE_HA_TOKEN`, un conteneur installé hors de Home Assistant
+publie les mêmes capteurs `sensor.promethee_*` que le module complémentaire.
 
 ## Limites
 
@@ -152,8 +176,12 @@ pytest                                   # tests
 uvicorn app.main:app --reload            # http://localhost:8000
 ```
 
-Structure : `app/` (API FastAPI, stock SQLite, lecture des fiches), `app/static/` (interface en
-JavaScript sans framework), `fiches/` (fiches d'exemple), `tests/`.
+Structure : `app/` (API FastAPI, stock SQLite, lecture des fiches, capteurs Home Assistant), `app/static/` (interface en
+JavaScript sans framework), `fiches/` (fiches d'exemple), `promethee/` (module Home Assistant), `tests/`.
+
+L'image `ghcr.io/astraeos-dev/promethee` (amd64 et arm64) est publiée à chaque poussée sur `main`
+par [.github/workflows/image.yml](.github/workflows/image.yml). Pour une nouvelle version, changer
+`app/__init__.py` et `promethee/config.yaml` ensemble : un test le vérifie.
 
 ## Sources et crédits
 

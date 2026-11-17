@@ -1,0 +1,6 @@
+# Dépôt de modules complémentaires Home Assistant.
+# Paramètres › Modules complémentaires › Boutique › ⋮ › Dépôts :
+# https://github.com/astraeos-dev/Promethee
+name: Astræos
+url: https://github.com/astraeos-dev/Promethee
+maintainer: Astræos
