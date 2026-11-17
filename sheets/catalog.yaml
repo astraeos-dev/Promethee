@@ -163,6 +163,16 @@ devices:
     links:
       - https://docs.arduino.cc/hardware/nano/
 
+  - id: enc28j60-ethernet-module
+    name: Ethernet Shield ENC28J60
+    category: Carte de développement
+    manufacturer: AZ-Delivery
+    part_number: ENC28J60
+    description: Module Ethernet SPI 10/100 Mbit avec contrôleur ENC28J60 et connecteur RJ45.
+    dimensions: 50,7 × 32,7 × 17,3 mm
+    links:
+      - https://www.az-delivery.de/fr/products/enc28j60-netzwerkmodul
+
   # ---------- Capteurs ----------
   - id: dht22
     name: DHT22 (AM2302)

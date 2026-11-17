@@ -7,6 +7,10 @@
   "inputs": "ae698d507cbc9c28",
   "builder": 6
  },
+ "enc28j60-ethernet-module": {
+  "inputs": "5ea3c702538d3ba4",
+  "builder": 6
+ },
  "esp32-devkitc-v4": {
   "inputs": "dac8fc5d81e505ff",
   "builder": 6
