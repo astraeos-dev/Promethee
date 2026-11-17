@@ -10,8 +10,12 @@ dist/
 .coverage
 htmlcov/
 
-# Éditeurs et systèmes
+# Editors and operating systems
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local data
+data/
+db/

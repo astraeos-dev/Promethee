@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prométhée</title>
+  <meta name="description" content="Stock de composants électroniques et fiches techniques en 3D.">
+  <meta name="theme-color" content="#0b0f17">
+  <link rel="icon" href="static/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/app.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./static/vendor/three/build/three.module.min.js",
+        "three/addons/": "./static/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="static/js/app.js"></script>
+</head>
+<body>
+  <header class="header">
+    <a class="brand" href="#/stock" aria-label="Prométhée, accueil">
+      <img src="static/icon.svg" width="34" height="34" alt="">
+      <span>Prométhée</span>
+    </a>
+    <nav class="nav" aria-label="Navigation principale">
+      <a href="#/stock" data-nav="stock">Stock</a>
+      <a href="#/sheets" data-nav="sheets">Fiches</a>
+    </nav>
+    <a class="btn btn-primary" href="#/new">+ Nouvelle fiche</a>
+  </header>
+  <main id="view" class="view" tabindex="-1"></main>
+  <div id="notifications" class="notifications" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -1,69 +1,199 @@
-<!--
-  Dépôt créé depuis le modèle astraeos-dev/modele-projet. À faire avant le premier commit :
-  1. Dans ce README, remplacer chaque {{…}}, supprimer les badges et sections inutiles, puis ces commentaires.
-  2. Compléter le logo assets/brand/icon.svg (la lettre du projet, voir le commentaire dans le fichier).
-  3. Vérifier l'année et le titulaire dans LICENSE.
-  Puis sur GitHub :
-  4. Bandeau About (roue dentée) : description, site web, topics.
-  5. Settings › General › Social preview : l'image faite avec outils/apercu-social.html du dépôt .github.
-  6. Settings › General › Features : cocher Sponsorships.
-  Les règles de présentation : https://github.com/astraeos-dev/.github/blob/main/charte/PRESENTATION.md
--->
-<p align="center"><img src="assets/brand/icon.svg" width="128" height="128" alt="{{Nom}}"></p>
+<p align="center"><img src="assets/brand/icon.svg" width="128" height="128" alt="Prométhée"></p>
 
-# {{Nom}} — {{ce que c'est, en quelques mots}}
+# Prométhée — stock électronique et fiches techniques en 3D
 
-> {{Une phrase : ce que fait le projet, pour qui, et ce qui le distingue.}}
+> Un conteneur Docker pour suivre son stock de composants et de cartes, avec pour chaque appareil
+> une fiche en Markdown : vue 3D interactive, brochage, caractéristiques et mode d'emploi.
 
-<!-- Badges : dans cet ordre, seulement ceux qui s'appliquent. Pas de badge Version sans release, ni Tests sans workflow. -->
-[![Version](https://img.shields.io/github/v/release/astraeos-dev/{{Depot}}?label=version&color=f2b84b)](https://github.com/astraeos-dev/{{Depot}}/releases/latest)
-[![Tests](https://github.com/astraeos-dev/{{Depot}}/actions/workflows/{{workflow}}.yml/badge.svg)](https://github.com/astraeos-dev/{{Depot}}/actions/workflows/{{workflow}}.yml)
-[![Licence MIT](https://img.shields.io/github/license/astraeos-dev/{{Depot}}?label=licence)](LICENSE)
-![{{Plateforme}}](https://img.shields.io/badge/{{Plateforme}}-{{version%20minimale}}%2B-{{couleur}}?logo={{logo}})
+[![Tests](https://github.com/astraeos-dev/Promethee/actions/workflows/tests.yml/badge.svg)](https://github.com/astraeos-dev/Promethee/actions/workflows/tests.yml)
+[![Licence MIT](https://img.shields.io/github/license/astraeos-dev/Promethee?label=licence)](LICENSE)
+![Docker](https://img.shields.io/badge/Docker-Compose%20v2-2496ed?logo=docker&logoColor=white)
+![Home Assistant](https://img.shields.io/badge/Home%20Assistant-module-18bcf2?logo=homeassistant&logoColor=white)
 
 <a href="https://buymeacoffee.com/gregorychau"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me a Coffee" height="40"></a>
 
-**{{Installer|Télécharger|Utiliser}}** : {{la façon la plus courte de commencer}}. Une idée, un problème ?
-[Ouvrir une demande](https://github.com/astraeos-dev/{{Depot}}/issues/new/choose).
+**Installer** : dans Home Assistant, ajouter ce dépôt aux modules complémentaires ;
+ou bien `docker compose up -d`, puis ouvrir <http://localhost:8080>. Une idée, un problème ?
+[Ouvrir une demande](https://github.com/astraeos-dev/Promethee/issues/new/choose).
 
-**Projet actif** · un des projets d'Astraeos : [site web](https://astraeos-dev.github.io/personnal-site/#/{{id-site}}) ·
-[{{Projet voisin}}](https://github.com/astraeos-dev/{{Depot-voisin}}) · [{{Projet voisin}}](https://github.com/astraeos-dev/{{Depot-voisin}})
+**Projet actif** · un des projets d'Astraeos : [site web](https://astraeos-dev.github.io/personnal-site/)
 
 ---
 
+<p align="center"><img src="assets/captures/fiche-3d.png" alt="Fiche de l'ESP32-DevKitC : vue 3D avec les noms des broches"></p>
+
 ## Présentation
 
-<!-- Deux ou trois paragraphes : le besoin, la réponse du projet, ce qui le rend fiable (méthode, sources, tests). -->
+Un atelier d'électronique accumule vite des centaines de références : résistances, capteurs,
+cartes de développement. Prométhée répond à deux questions : *combien m'en reste-t-il, et où ?*
+et *comment se branche cet appareil ?*
+
+Le stock vit dans une base SQLite, avec l'historique de chaque entrée et sortie. La documentation
+vit dans des **fichiers texte, un par appareil**, rangés dans le dossier `sheets/` : on les écrit
+dans n'importe quel éditeur, on les versionne avec Git, on les partage. L'interface les relit à
+chaque affichage et en tire une vue 3D, un schéma de brochage et un tableau des broches, reliés
+entre eux : survoler une broche l'éclaire partout.
+
+Tout fonctionne hors ligne : Three.js est inclus dans l'image, aucune ressource n'est chargée
+depuis Internet.
 
 ## Fonctionnalités
 
-- **{{Fonction}}** : {{ce qu'elle apporte}}
+- **Stock** : quantités, emplacement, seuil d'alerte, fournisseur, prix ; boutons + et − ;
+  historique des mouvements ; recherche et filtres ; import et export CSV (compatible tableur).
+- **Fiches techniques** : un fichier Markdown avec en-tête YAML par appareil, créé à la main ou
+  depuis l'éditeur intégré (aperçu 3D en direct, erreurs signalées ligne par ligne).
+- **Vue 3D** : générée à partir du boîtier et du brochage décrits dans la fiche (cartes, modules,
+  DIP, TO-92), avec noms sérigraphiés, étiquettes, vues de dessus, de face et de dessous ;
+  ou modèle réel importé en `.glb`, `.gltf` ou `.stl`.
+- **Brochage** : schéma 2D et tableau colorés par type (alimentation, I²C, SPI, UART…),
+  avec fonctions alternatives et précautions ; filtre par type.
+- **Utilisation** : texte libre en Markdown (câblage, code, formules), caractéristiques et liens
+  vers les datasheets.
+- **Home Assistant** : module complémentaire avec l'interface dans la barre latérale, et capteurs
+  (pièces en stock, articles à réapprovisionner) pour les tableaux de bord et les notifications.
+- **Lien stock ↔ fiche** : chaque article peut pointer vers sa fiche, qui affiche la quantité en stock.
+
+<p align="center"><img src="assets/captures/brochage.png" alt="Schéma de brochage et tableau des broches"></p>
 
 ## Installation
 
-<!-- Les prérequis (version minimale), puis la méthode recommandée en premier, les autres ensuite. -->
+### Dans Home Assistant (module complémentaire)
+
+Prérequis : Home Assistant OS ou Supervised, sur aarch64 (Raspberry Pi 4 et 5) ou amd64.
+
+1. **Paramètres › Modules complémentaires › Boutique › ⋮ › Dépôts**, ajouter
+   `https://github.com/astraeos-dev/Promethee`.
+2. Installer **Prométhée**, le démarrer et cocher **Afficher dans la barre latérale**.
+
+L'interface s'ouvre dans Home Assistant (Ingress), sans port à ouvrir. Les fiches sont dans
+`/addon_configs/<id>_promethee/sheets/`, accessibles avec Studio Code Server ou Samba. Capteurs,
+exemples d'automatisation et de carte : [homeassistant-addon/DOCS.md](homeassistant-addon/DOCS.md).
+
+### Avec Docker Compose
+
+Prérequis : Docker avec Compose v2.
+
+```bash
+git clone https://github.com/astraeos-dev/Promethee.git
+cd Promethee
+docker compose up -d
+```
+
+L'interface répond sur <http://localhost:8080>. Deux dossiers du dépôt sont montés dans le conteneur :
+
+| Dossier    | Contenu                                                   |
+|------------|-----------------------------------------------------------|
+| `sheets/`  | un fichier `.md` par appareil, et `models/` pour les modèles 3D |
+| `db/`      | la base SQLite du stock (`inventory.sqlite3`), à sauvegarder |
+
+Sous Linux, si votre identifiant n'est pas 1000, lancez `UID=$(id -u) GID=$(id -g) docker compose up -d`
+pour que les fichiers créés vous appartiennent.
+
+Sans Compose :
+
+```bash
+docker build -t promethee .
+docker run -d -p 8080:8000 -v promethee-sheets:/var/lib/promethee/sheets -v promethee-db:/var/lib/promethee/db promethee
+```
+
+Avec un volume vide, les fiches d'exemple sont copiées au premier démarrage.
 
 ## Utilisation
 
 ```bash
-{{commande la plus courante}}
+docker compose up -d          # démarrer
+docker compose logs -f        # suivre les journaux
+docker compose up -d --build  # mettre à jour après un git pull
 ```
 
-<!-- Sections propres au projet, ici : Méthode, Précision, Entités, Configuration, Exemples… -->
+### Créer une fiche à la main
+
+Copier `sheets/_template.md` sous un nouveau nom, par exemple `sheets/relais-5v.md`, le compléter,
+puis recharger la page **Fiches**. Le format complet est décrit dans
+[docs/sheet-format.md](docs/sheet-format.md). Les clés sont en anglais, les valeurs et le texte
+en français. Extrait :
+
+```yaml
+---
+name: NE555
+category: Circuit intégré
+package: { type: dip, length: 10.16, width: 7.62, marking: NE555P }
+pinout:
+  rows:
+    - side: left
+      pins:
+        - { n: 1, name: GND, type: ground }
+        - { n: 2, name: TRIG, type: control, description: "Déclenchement sous 1/3 de VCC" }
+---
+
+## Montage astable
+Fréquence : **f = 1,44 / ((R1 + 2·R2) · C)**
+```
+
+### Fiches fournies
+
+ESP32-DevKitC V4, Arduino Nano, NE555, module BME280 et transistor PN2222A.
+
+### Import CSV
+
+Colonnes reconnues : `id`, `name`, `category`, `value`, `package`, `sheet`, `quantity`, `threshold`,
+`location`, `supplier`, `price`, `notes` ; les en-têtes français (`nom`, `quantité`, `seuil`,
+`emplacement`…) sont aussi acceptés. Séparateur `;`, `,` ou tabulation. Une ligne dont
+l'`id` existe met l'article à jour, les autres créent un article.
+
+### API
+
+L'API REST est documentée sur <http://localhost:8080/api/docs>.
+
+## Configuration
+
+| Variable             | Défaut             | Rôle                                   |
+|----------------------|--------------------|----------------------------------------|
+| `PROMETHEE_SHEETS_DIR` | `/var/lib/promethee/sheets` | dossier des fiches                     |
+| `PROMETHEE_DB_DIR`   | `/var/lib/promethee/db` | dossier de la base SQLite              |
+| `PROMETHEE_MODEL_MAX_BYTES` | `31457280`  | taille maximale d'un modèle 3D (octets) |
+| `PROMETHEE_HA_URL`   | —                  | Home Assistant à informer, ex. `http://192.168.1.10:8123` |
+| `PROMETHEE_HA_TOKEN` | —                  | jeton d'accès longue durée (profil Home Assistant › Sécurité) |
+| `PROMETHEE_HA`       | activé             | `off` pour ne publier aucun capteur |
+
+Avec `PROMETHEE_HA_URL` et `PROMETHEE_HA_TOKEN`, un conteneur installé hors de Home Assistant
+publie les mêmes capteurs `sensor.promethee_*` que le module complémentaire.
 
 ## Limites
 
-<!-- Ce que le projet ne fait pas, ou fait de façon approchée. -->
+- Pas de comptes utilisateurs : à réserver au réseau local, ou à placer derrière un
+  reverse proxy avec authentification.
+- La vue 3D générée est schématique : elle place les broches et les principaux composants,
+  mais ne remplace pas un modèle exporté d'un logiciel de CAO.
+- Les boîtiers CMS (SOIC, QFN…) ne sont pas encore générés : utiliser `module` ou un modèle importé.
+- Le texte des fiches accepte le HTML brut du Markdown : ne pas ouvrir l'éditeur à des inconnus.
 
 ## Développement
 
 ```bash
-{{commande des tests}}
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements-dev.txt
+pytest                                   # tests
+uvicorn app.main:app --reload            # http://localhost:8000
 ```
+
+Structure : `app/` (API FastAPI, stock SQLite, lecture des fiches, capteurs Home Assistant), `app/static/` (interface en
+JavaScript sans framework), `sheets/` (fiches d'exemple), `homeassistant-addon/` (module Home Assistant), `tests/`.
+Le code (identifiants, commentaires, API, base de données) est en anglais ; l'interface et la
+documentation sont en français.
+
+L'image `ghcr.io/astraeos-dev/promethee` (amd64 et arm64) est publiée à chaque poussée sur `main`
+par [.github/workflows/image.yml](.github/workflows/image.yml). Pour une nouvelle version, changer
+`app/__init__.py` et `homeassistant-addon/config.yaml` ensemble : un test le vérifie.
 
 ## Sources et crédits
 
-<!-- Données, algorithmes, bibliothèques et polices, avec leur licence. -->
+- [Three.js](https://threejs.org) r170, MIT, inclus dans `app/static/vendor/three/`.
+- [FastAPI](https://fastapi.tiangolo.com), [Uvicorn](https://www.uvicorn.org), [PyYAML](https://pyyaml.org),
+  [Python-Markdown](https://python-markdown.github.io) : MIT ou BSD.
+- Brochages établis d'après les documentations d'Espressif, Arduino, Texas Instruments, Bosch
+  Sensortec et onsemi, citées dans chaque fiche.
 
 ## Licence
 

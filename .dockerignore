@@ -1,0 +1,14 @@
+.git
+.github
+.venv
+venv
+data
+db
+base
+tests
+docs
+assets
+homeassistant-addon
+**/__pycache__
+*.md
+!sheets/*.md
