@@ -1,48 +1,48 @@
-# Prométhée dans Home Assistant
-
-## Installation
-
-1. **Paramètres › Modules complémentaires › Boutique des modules complémentaires**.
-2. Menu **⋮ › Dépôts**, ajouter `https://github.com/astraeos-dev/Promethee`, puis fermer.
-3. Rechercher **Prométhée**, l'installer, puis **Démarrer**.
-4. Activer **Afficher dans la barre latérale** : Prométhée apparaît dans le menu de Home Assistant.
+# Prométhée in Home Assistant
 
 L'interface passe par Home Assistant (Ingress) : pas de port à ouvrir, et seuls les utilisateurs
 connectés à Home Assistant y ont accès.
 
-## Fiches techniques
+## Installation
 
-Les fiches (brochage, vue 3D, mode d'emploi) sont livrées avec le module et arrivent avec ses
-mises à jour. Pour en demander une : bouton **Demander une fiche** dans Prométhée, qui ouvre
-[le formulaire de demande](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml)
-sur GitHub. Une erreur dans une fiche se signale avec **Signaler une erreur**, sur la fiche.
+1. **Settings › Add-ons › Add-on Store**.
+2. **⋮ menu › Repositories**, add `https://github.com/astraeos-dev/Promethee`, then close.
+3. Search for **Prométhée**, install it, and then click **Start**.
+4. Enable **Show in sidebar**: Prométhée will appear in the Home Assistant menu.
 
 ## Stock
+
+## Technical Data Sheets
+
+Data sheets (pinout, 3D view, user manual) are provided with the module and are included in its
+updates. To request one, use the **Request a data sheet** button in Prométhée, which opens
+[the request form](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml)
+on GitHub. To report an error in a data sheet, use the **Report an error** option found on the sheet itself.
 
 Pour un nouvel article, le champ **Nom** propose une liste de matériel courant : choisir un nom
 remplit la catégorie, la valeur, le boîtier, la référence et la fiche liée.
 
 Le stock est enregistré dans le module et inclus dans les sauvegardes de Home Assistant.
 
-## Capteurs
-
-Le module publie ces capteurs, mis à jour après chaque modification du stock et toutes les 5 minutes :
-
-| Entité | Valeur |
-|--------|--------|
-| `sensor.promethee_items` | nombre de références en stock |
-| `sensor.promethee_parts` | nombre total de pièces |
-| `sensor.promethee_low_stock` | articles à réapprovisionner (quantité ≤ seuil) ; l'attribut `items` les liste |
-| `sensor.promethee_sheets` | nombre de fiches techniques |
-
-Ces entités n'ont pas d'identifiant unique : elles ne se renomment pas depuis l'interface,
-mais s'utilisent normalement dans les cartes, les automatisations et l'historique.
-
 ### Notification quand un article passe sous son seuil
+
+## Sensors
+
+The module publishes these sensors, which are updated after every stock change and every 5 minutes:
+
+| Entity                         | Value                                                                                     |
+| ------------------------------ | ----------------------------------------------------------------------------------------- |
+| `sensor.promethee_items`     | number of stock items (SKUs)                                                              |
+| `sensor.promethee_parts`     | total number of individual parts                                                          |
+| `sensor.promethee_low_stock` | items requiring replenishment (quantity ≤ threshold); the `items` attribute lists them |
+| `sensor.promethee_sheets`    | number of technical data sheets                                                           |
+
+These entities do not have a unique identifier; they cannot be renamed via the interface,
+but they can be used as normal in cards, automations, and history.
 
 ```yaml
 automation:
-  - alias: Prométhée — stock bas
+  - alias: Prométhée — low stock
     triggers:
       - trigger: state
         entity_id: sensor.promethee_low_stock
@@ -54,19 +54,19 @@ automation:
     actions:
       - action: notify.notify
         data:
-          title: Stock électronique
+          title: Electronic stock
           message: >
-            À réapprovisionner :
+            To restock:
             {% for a in state_attr('sensor.promethee_low_stock', 'items') %}
             - {{ a.name }} {{ a.value }} : {{ a.quantity }} (seuil {{ a.threshold }}, {{ a.location }})
             {% endfor %}
 ```
 
-### Carte du tableau de bord
+### Dashboard map
 
 ```yaml
 type: markdown
-title: À réapprovisionner
+title: To restock
 content: >
   {% set items = state_attr('sensor.promethee_low_stock', 'items') or [] %}
   {% for a in items %}
@@ -76,13 +76,13 @@ content: >
   {% endfor %}
 ```
 
-## Accès direct (facultatif)
 
-Dans l'onglet **Configuration › Réseau**, un port peut être attribué pour ouvrir Prométhée sans
-passer par Home Assistant, par exemple `8080` puis `http://homeassistant.local:8080`.
-Cet accès n'a **pas d'authentification** : à réserver au réseau local.
+## Direct Access (Optional)
 
-## Sauvegarde
+In the **Configuration › Network** tab, you can assign a port to open Prométhée without going through Home Assistant—for example, using port `8080` would allow access via `http://homeassistant.local:8080`.
+This access method has **no authentication**; it should be restricted to your local network.
 
-Les sauvegardes de Home Assistant incluent le module et donc la base du stock.
-Le stock s'exporte aussi en CSV depuis la page **Stock**.
+## Backup
+
+Home Assistant backups include this module, and therefore the inventory database.
+You can also export your inventory as a CSV file from the **Inventory** page.

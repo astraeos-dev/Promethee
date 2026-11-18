@@ -1,7 +1,7 @@
 name: Prométhée
 version: "0.5.1"
 slug: promethee
-description: Stock de composants électroniques et fiches techniques avec vue 3D.
+description: Stock of electronic components and datasheets with 3D view.
 url: https://github.com/astraeos-dev/Promethee
 arch:
   - aarch64
@@ -22,4 +22,4 @@ environment:
 ports:
   8000/tcp: null
 ports_description:
-  8000/tcp: Accès direct sans passer par Home Assistant (désactivé par défaut, sans authentification)
+  8000/tcp: Direct access without going through Home Assistant (disabled by default, no authentication)

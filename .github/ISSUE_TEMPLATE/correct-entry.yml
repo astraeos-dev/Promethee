@@ -1,0 +1,26 @@
+name: Correct an entry
+description: 
+  Use this template to report an error in a fiche. Please provide a link to the source of the correct information.
+title: "Correction for sheet « {sheet} »"
+labels: ["sheet correction"]
+body:
+  - type: input
+    id: sheet
+    attributes:
+      label: Fiche ID
+      description: ID of the fiche to correct (e.g. `esp32-devkitc-v4`).
+      placeholder: esp32-devkitc-v4
+    validations:
+      required: true
+  - type: textarea
+    id: error
+    attributes:
+      label: Error Found
+      placeholder: Pin 3 is labeled GPIO36, but it's GPIO39 on my board.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Source
+      description: Link to the documentation or photo showing the correct information.

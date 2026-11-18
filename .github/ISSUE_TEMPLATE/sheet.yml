@@ -1,0 +1,56 @@
+name: Report a new sheet
+description: Report a new hardware sheet with technical details.
+title: "Sheet : "
+labels: ["sheet"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The sheet will be added in a future update of Prométhée, with its pinout,
+        user manual and a 3D model of the device, created based on its technical sheet and your
+        photos : no need to provide one. The more precise the information, the faster it arrives.
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: Current name and, if possible, the version of the board.
+      placeholder: ESP32-C3 SuperMini, relay module 2 channels, LM317…
+    validations:
+      required: true
+  - type: input
+    id: part_number
+    attributes:
+      label: Manufacturer part number
+      description: If the device has a part number, please provide it.
+      placeholder: Espressif ESP32-C3FH4, Texas Instruments LM317T…
+  - type: input
+    id: category
+    attributes:
+      label: Category
+      description: Development board, sensor, display, communication, module, power supply, motor, integrated circuit, transistor, diode…
+      placeholder: Sensor
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: Technical sheet (datasheet), vendor page, schematic, pinout published by the manufacturer.
+      placeholder: https://…
+    validations:
+      required: true
+  - type: textarea
+    id: photos
+    attributes:
+      label: Photos
+      description: |
+        Top and bottom, front view, with legible markings: these are used to create an accurate 3D reproduction of the device (components, screen printing, color). Drag and drop the images here.
+  - type: input
+    id: dimensions
+    attributes:
+      label: Dimensions (facultatif)
+      description: Length × width in mm, if they are not listed in the technical sheet.
+      placeholder: 52 × 28 mm
+  - type: textarea
+    id: usage
+    attributes:
+      label: Usage
+      description: Type of installation, example code, precautions, 3.3 V / 5 V compatibility…

@@ -115,7 +115,7 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
         try:
             sheet = library.get(check_id(sheet_id))
         except FileNotFoundError:
-            raise HTTPException(404, "Fiche introuvable.") from None
+            raise HTTPException(404, "Record not found.") from None
         return {**sheet.full(), "correction_url": correction_url(config.REPOSITORY_URL, sheet.id, sheet.meta["name"])}
 
     @app.get("/api/catalog")
@@ -130,9 +130,9 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
         try:
             path = library.model_path(name)
         except FileNotFoundError:
-            raise HTTPException(404, "Modèle introuvable.") from None
+            raise HTTPException(404, "Model not found.") from None
         if not path.is_file():
-            raise HTTPException(404, "Modèle introuvable.")
+            raise HTTPException(404, "Model not found.")
         return FileResponse(path, media_type="model/gltf-binary",
                             headers={"Cache-Control": f"public, max-age={MODEL_CACHE_SECONDS}"})
 
@@ -142,7 +142,7 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
         try:
             return inventory.get(item_id)
         except KeyError:
-            raise HTTPException(404, "Article introuvable.") from None
+            raise HTTPException(404, "Article not found.") from None
 
     @app.get("/api/items")
     def list_items(q: str = "", category: str = "", sheet: str = "",
@@ -173,7 +173,7 @@ def create_app(sheets_dir: Path | None = None, db_path: Path | None = None,
         try:
             inventory.delete(item_id)
         except KeyError:
-            raise HTTPException(404, "Article introuvable.") from None
+            raise HTTPException(404, "Article not found.") from None
         return Response(status_code=204)
 
     @app.post("/api/items/{item_id}/movements")

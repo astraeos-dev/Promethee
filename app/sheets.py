@@ -113,10 +113,10 @@ def _positive(value: Any, default: float, key: str, warnings: list[str]) -> floa
     try:
         number = float(value)
     except (TypeError, ValueError):
-        warnings.append(f"{key} : « {value} » n'est pas un nombre, {default} utilisé.")
+        warnings.append(f"{key} : « {value} » is not a number, {default} used.")
         return default
     if number <= 0:
-        warnings.append(f"{key} : doit être positif, {default} utilisé.")
+        warnings.append(f"{key} : must be positive, {default} used.")
         return default
     return number
 
@@ -138,7 +138,7 @@ def _optional_float(value: Any) -> float | None:
 def _color(value: Any, default: str, key: str, warnings: list[str]) -> str:
     color = _text(value) or default
     if not COLOR_RE.fullmatch(color):
-        warnings.append(f"{key} : « {color} » doit s'écrire #rrggbb.")
+        warnings.append(f"{key} : « {color} » must be written as #rrggbb.")
         return default
     return color
 
@@ -146,7 +146,7 @@ def _color(value: Any, default: str, key: str, warnings: list[str]) -> str:
 def _choice(value: Any, allowed: set[str], default: str, key: str, warnings: list[str]) -> str:
     choice = _text(value).lower() or default
     if choice not in allowed:
-        warnings.append(f"{key} : « {choice} » inconnu (attendu : {', '.join(sorted(allowed))}), « {default} » utilisé.")
+        warnings.append(f"{key} : « {choice} » unknown (expected : {', '.join(sorted(allowed))}), « {default} » used.")
         return default
     return choice
 
@@ -157,7 +157,7 @@ def _objects(raw: Any, key: str, warnings: list[str]) -> list[tuple[int, dict]]:
         if isinstance(item, dict):
             items.append((i, item))
         else:
-            warnings.append(f"{key}[{i}] ignoré : ce doit être un objet.")
+            warnings.append(f"{key}[{i}] ignored : this must be an object.")
     return items
 
 
@@ -168,13 +168,13 @@ def split_front_matter(source: str) -> tuple[dict[str, Any], str]:
     source = source.lstrip("﻿")
     match = FRONT_MATTER_RE.match(source)
     if not match:
-        raise SheetError("L'en-tête YAML est absent : la fiche doit commencer par une ligne « --- ».")
+        raise SheetError("The YAML front matter is missing : the sheet must start with a line « --- ».")
     try:
         meta = yaml.load(match.group(1), Loader=_Loader) or {}
     except yaml.YAMLError as exc:
-        raise SheetError(f"En-tête YAML invalide : {exc}") from exc
+        raise SheetError(f"Invalid YAML front matter : {exc}") from exc
     if not isinstance(meta, dict):
-        raise SheetError("L'en-tête YAML doit être une suite de clés « nom: valeur ».")
+        raise SheetError("The YAML front matter must be a list of key-value pairs.")
     return meta, match.group(2)
 
 
@@ -232,7 +232,7 @@ def _normalize_pin(raw: Any, index: int, warnings: list[str]) -> dict[str, Any]:
         "name": name,
         # Text printed next to the pin on the real board, when it differs from the name.
         "silkscreen": _text(pin.get("silkscreen")) or name,
-        "type": _choice(pin.get("type"), PIN_TYPES, "other", f"Broche « {name} » : type", warnings),
+        "type": _choice(pin.get("type"), PIN_TYPES, "other", f"Pin « {name} » : type", warnings),
         "functions": [_text(f) for f in functions if _text(f)],
         "description": _text(pin.get("description")),
     }
@@ -288,10 +288,10 @@ def _normalize_parts(raw: Any, warnings: list[str]) -> list[dict[str, Any]]:
         model = _text(part.get("model"))
         shape = _text(part.get("shape")).lower()
         if model and not PART_NAME_RE.fullmatch(model):
-            warnings.append(f"{key}.model : « {model} » n'est pas un nom de pièce (voir tools/parts.yaml).")
+            warnings.append(f"{key}.model : « {model} » is not a part name (see tools/parts.yaml).")
             continue
         if not model and shape not in SHAPES:
-            warnings.append(f"{key} ignoré : indiquer « model » ou « shape » (box ou cylinder).")
+            warnings.append(f"{key} ignored : indicate « model » or « shape » (box or cylinder).")
             continue
         parts.append({
             "name": _text(part.get("name")),
@@ -316,13 +316,13 @@ def normalize(meta: dict[str, Any]) -> tuple[dict[str, Any], list[str]]:
     warnings: list[str] = []
     name = _text(meta.get("name"))
     if not name:
-        raise SheetError("Le champ « name » est obligatoire.")
+        raise SheetError("The « name » field is required.")
     tags = meta.get("tags") or []
     if not isinstance(tags, list):
         tags = [t.strip() for t in str(tags).split(",")]
     specs = meta.get("specs") or {}
     if not isinstance(specs, dict):
-        warnings.append("specs : doit être une liste « clé: valeur ».")
+        warnings.append("specs : must be a list of key-value pairs.")
         specs = {}
     links = meta.get("links") or []
     if isinstance(links, dict):
@@ -362,7 +362,7 @@ def model_inputs_hash(meta: dict[str, Any]) -> str:
 
 def check_id(sheet_id: str) -> str:
     if not ID_RE.fullmatch(sheet_id or ""):
-        raise SheetError("Identifiant invalide : lettres minuscules, chiffres et tirets (64 caractères au plus).")
+        raise SheetError("Invalid identifier : lowercase letters, numbers and hyphens (up to 64 characters).")
     return sheet_id
 
 
@@ -398,7 +398,7 @@ class SheetLibrary:
         except SheetError as exc:
             result = exc
         except UnicodeDecodeError as exc:
-            result = SheetError(f"Encodage invalide : {exc}")
+            result = SheetError(f"Invalid encoding : {exc}")
         if isinstance(result, Sheet):
             self._attach_model(result)
         self._cache[sheet_id] = (mtime, result)

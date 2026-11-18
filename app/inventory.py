@@ -1,6 +1,5 @@
 """Inventory: items and their stock movement history, stored in SQLite.
 
-Messages returned to the user are in French, like the UI.
 """
 
 from __future__ import annotations
@@ -47,15 +46,6 @@ FIELDS = ("name", "category", "value", "package", "sheet", "quantity", "threshol
 TEXT_FIELDS = ("name", "category", "value", "package", "location", "supplier", "notes")
 CSV_FIELDS = ("id",) + FIELDS + ("updated_at",)
 
-# French column headers accepted on CSV import (spreadsheets made by hand).
-CSV_ALIASES = {
-    "nom": "name", "categorie": "category", "catégorie": "category", "valeur": "value",
-    "boitier": "package", "boîtier": "package", "fiche": "sheet", "quantite": "quantity",
-    "quantité": "quantity", "seuil": "threshold", "emplacement": "location",
-    "fournisseur": "supplier", "prix": "price",
-}
-
-
 class InventoryError(ValueError):
     """Rejected inventory operation."""
 
@@ -86,15 +76,15 @@ class Inventory:
     def _clean(data: dict[str, Any], partial: bool) -> dict[str, Any]:
         d = {k: data[k] for k in FIELDS if k in data}
         if (not partial or "name" in d) and not str(d.get("name") or "").strip():
-            raise InventoryError("Le nom est obligatoire.")
-        for key, label in (("quantity", "quantité"), ("threshold", "seuil")):
+            raise InventoryError("The name is required.")
+        for key, label in (("quantity", "quantity"), ("threshold", "threshold")):
             if key in d:
                 try:
                     d[key] = int(d[key] or 0)
                 except (TypeError, ValueError):
-                    raise InventoryError(f"« {label} » doit être un nombre entier.") from None
+                    raise InventoryError(f"« {label} » must be an integer.") from None
                 if d[key] < 0:
-                    raise InventoryError(f"« {label} » ne peut pas être négatif.")
+                    raise InventoryError(f"« {label} » cannot be negative.")
         if "price" in d:
             if d["price"] in (None, ""):
                 d["price"] = None
@@ -102,7 +92,7 @@ class Inventory:
                 try:
                     d["price"] = float(str(d["price"]).replace(",", "."))
                 except ValueError:
-                    raise InventoryError("Le prix doit être un nombre.") from None
+                    raise InventoryError("The price must be a number.") from None
         if "sheet" in d:
             d["sheet"] = str(d["sheet"] or "").strip() or None
         for key in TEXT_FIELDS:
@@ -151,7 +141,7 @@ class Inventory:
                 f"INSERT INTO items ({', '.join(d)}) VALUES ({', '.join('?' * len(d))})", list(d.values()))
             item_id = cur.lastrowid
             if d.get("quantity"):
-                self._log(conn, item_id, d["quantity"], d["quantity"], "Création", at)
+                self._log(conn, item_id, d["quantity"], d["quantity"], "Creation", at)
         return self.get(item_id)
 
     def update(self, item_id: int, data: dict[str, Any]) -> dict:
@@ -165,7 +155,7 @@ class Inventory:
             conn.execute(f"UPDATE items SET {', '.join(f'{k} = ?' for k in d)} WHERE id = ?", [*d.values(), item_id])
             if "quantity" in d and d["quantity"] != previous["quantity"]:
                 self._log(conn, item_id, d["quantity"] - previous["quantity"], d["quantity"],
-                          "Correction d'inventaire", at)
+                          "Inventory correction", at)
         return self.get(item_id)
 
     def delete(self, item_id: int) -> None:
@@ -175,7 +165,7 @@ class Inventory:
 
     def move(self, item_id: int, delta: int, reason: str = "") -> dict:
         if not isinstance(delta, int) or delta == 0:
-            raise InventoryError("La variation doit être un entier non nul.")
+            raise InventoryError("The variation must be a non-zero integer.")
         at = now()
         with self._connect() as conn:
             row = conn.execute("SELECT quantity FROM items WHERE id = ?", (item_id,)).fetchone()
@@ -183,7 +173,7 @@ class Inventory:
                 raise KeyError(item_id)
             quantity = row["quantity"] + delta
             if quantity < 0:
-                raise InventoryError(f"Stock insuffisant : {row['quantity']} en stock.")
+                raise InventoryError(f"Insufficient stock: {row['quantity']} in stock.")
             conn.execute("UPDATE items SET quantity = ?, updated_at = ? WHERE id = ?", (quantity, at, item_id))
             self._log(conn, item_id, delta, quantity, reason.strip(), at)
         return self.get(item_id)

@@ -1,6 +1,6 @@
 """Hardware catalog: a non-exhaustive list of common hardware for new stock items.
 
-The "Nom" field of a new item offers these names; picking one fills in the
+The "Name" field of a new item offers these names; picking one fills in the
 other fields (category, value, package, reference, linked sheet). An entry's id
 is also the id of its sheet when one exists (sheets/<id>.md): the item is then
 linked to it.

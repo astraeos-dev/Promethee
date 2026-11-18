@@ -1,11 +1,10 @@
 # Prométhée
 
-Stock de composants électroniques et fiches techniques avec vue 3D, brochage et mode d'emploi,
-directement dans la barre latérale de Home Assistant.
+Stock of electronic components and datasheets complete with 3D views, pinouts, and user manuals accessible directly from the Home Assistant sidebar.
 
-- Suivi des quantités, emplacements et seuils d'alerte.
-- Une fiche Markdown par appareil, modifiable à la main ou depuis l'éditeur intégré.
-- Capteurs Home Assistant : pièces en stock, articles à réapprovisionner.
+- Tracking of quantities, locations, and alert thresholds.
+- One Markdown file per device, editable manually or via the built-in editor.
+- Home Assistant sensors: items in stock, items to be restocked.
 
 ![Architectures][aarch64-shield] ![Architectures][amd64-shield]
 

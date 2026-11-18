@@ -45,21 +45,21 @@ def sensor_states(summary: dict[str, Any], low_stock: list[dict[str, Any]]) -> d
     return {
         "sensor.promethee_items": {
             "state": summary["items"],
-            "attributes": {**common, "friendly_name": "Prométhée références", "icon": "mdi:archive-outline",
-                           "unit_of_measurement": "références", "state_class": "measurement"},
+            "attributes": {**common, "friendly_name": "Prométhée references", "icon": "mdi:archive-outline",
+                           "unit_of_measurement": "references", "state_class": "measurement"},
         },
         "sensor.promethee_parts": {
             "state": summary["parts"],
-            "attributes": {**common, "friendly_name": "Prométhée pièces en stock", "icon": "mdi:chip",
-                           "unit_of_measurement": "pièces", "state_class": "measurement"},
+            "attributes": {**common, "friendly_name": "Prométhée parts in stock", "icon": "mdi:chip",
+                           "unit_of_measurement": "parts", "state_class": "measurement"},
         },
         "sensor.promethee_low_stock": {
             "state": summary["low_stock"],
             "attributes": {
                 **common,
-                "friendly_name": "Prométhée à réapprovisionner",
+                "friendly_name": "Prométhée low stock",
                 "icon": "mdi:alert-circle-outline" if summary["low_stock"] else "mdi:check-circle-outline",
-                "unit_of_measurement": "articles",
+                "unit_of_measurement": "items",
                 "state_class": "measurement",
                 "items": [
                     {k: item[k] for k in ("name", "value", "quantity", "threshold", "location")}
@@ -69,8 +69,8 @@ def sensor_states(summary: dict[str, Any], low_stock: list[dict[str, Any]]) -> d
         },
         "sensor.promethee_sheets": {
             "state": summary["sheets"],
-            "attributes": {**common, "friendly_name": "Prométhée fiches techniques", "icon": "mdi:book-open-variant",
-                           "unit_of_measurement": "fiches"},
+            "attributes": {**common, "friendly_name": "Prométhée technical sheets", "icon": "mdi:book-open-variant",
+                           "unit_of_measurement": "sheets"},
         },
     }
 
@@ -95,7 +95,7 @@ class Publisher:
             return
         self._thread = threading.Thread(target=self._run, name="promethee-ha", daemon=True)
         self._thread.start()
-        log.info("Publication des capteurs vers Home Assistant activée.")
+        log.info("Sensor publishing to Home Assistant enabled.")
 
     def stop(self) -> None:
         self._stopped.set()
@@ -124,11 +124,11 @@ class Publisher:
             try:
                 self.publish()
                 if self._failing:
-                    log.info("Home Assistant joint à nouveau.")
+                    log.info("Home Assistant joins again.")
                 self._failing = False
             except Exception as exc:  # network error, token refused, Home Assistant restarting…
                 if not self._failing:
-                    log.warning("Publication vers Home Assistant impossible : %s", exc)
+                    log.warning("Publication to Home Assistant failed: %s", exc)
                 self._failing = True
             self._changed.wait(REFRESH_SECONDS)
             self._changed.clear()

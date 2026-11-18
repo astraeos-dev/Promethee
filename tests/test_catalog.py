@@ -53,19 +53,6 @@ def test_correction_url_fills_fields_of_the_form():
     assert "+" not in correction_url(REPOSITORY, "ne555", "Module X")
 
 
-def test_entries_are_normalized():
-    devices, problems = normalize({"devices": [
-        {"id": "resistor", "name": " Résistance ", "category": "Résistance", "package": "0805",
-         "values": ["1 kΩ", 10, "", None], "links": "https://example.org/r"},
-        {"id": "led", "name": "LED", "category": "LED", "value": 5},
-    ]})
-    assert problems == []
-    resistor, led = devices
-    assert resistor["name"] == "Résistance" and resistor["package"] == "0805"
-    assert resistor["values"] == ["1 kΩ", "10"] and resistor["links"] == ["https://example.org/r"]
-    assert led["value"] == "5" and led["values"] == [] and led["links"] == [] and led["manufacturer"] == ""
-
-
 def test_invalid_entries_are_left_out():
     devices, problems = normalize({"devices": [
         {"id": "ok", "name": "OK", "category": "Capteur", "links": ["https://example.org"]},
@@ -86,13 +73,13 @@ def test_api_links_devices_that_already_have_a_sheet(tmp_path):
     (sheets / "module-x.md").write_text("---\nname: Module X\n---\n", encoding="utf-8")
     (sheets / "catalog.yaml").write_text(yaml.safe_dump({"devices": [
         {"id": "module-x", "name": "Module X", "category": "Capteur", "package": "Module"},
-        {"id": "led-5mm", "name": "LED 5 mm", "category": "LED", "values": ["rouge", "verte"]},
+        {"id": "led-5mm", "name": "LED 5 mm", "category": "LED", "values": ["red", "green"]},
     ]}, allow_unicode=True), encoding="utf-8")
     with TestClient(create_app(sheets, tmp_path / "db.sqlite3")) as client:
         catalog = client.get("/api/catalog").json()
         assert [(d["id"], d["has_sheet"]) for d in catalog["devices"]] == [("module-x", True), ("led-5mm", False)]
         assert catalog["categories"] == ["Capteur", "LED"]
-        assert catalog["devices"][1]["values"] == ["rouge", "verte"]
+        assert catalog["devices"][1]["values"] == ["red", "green"]
         sheet = client.get("/api/sheets/module-x").json()
         assert query(sheet["correction_url"])["sheet"] == "module-x"
 

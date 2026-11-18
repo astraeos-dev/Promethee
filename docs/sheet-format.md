@@ -1,187 +1,186 @@
-# Format d'une fiche
+# Sheet Format
 
-Ce document sert à préparer les fiches livrées avec Prométhée. Pour en obtenir une nouvelle,
-il suffit d'[ouvrir une demande](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml) :
-la fiche et le modèle 3D de l'appareil sont réalisés d'après sa fiche technique et des photos,
-puis ajoutés dans une mise à jour.
+This document describes how to prepare sheets distributed with Prométhée. To request a new one,
+open a [request](https://github.com/astraeos-dev/Promethee/issues/new?template=fiche.yml):
+the device sheet and 3D model are created from its datasheet and photos, then included in an update.
 
-Chaque appareil a son fichier dans le dossier `sheets/` du dépôt : `sheets/<identifiant>.md`.
-L'identifiant est le nom du fichier, en minuscules, chiffres et tirets (`esp32-devkitc-v4`).
-Les fichiers qui commencent par `_` (comme `_template.md`) ne sont pas listés.
+Each device has a file in the repository’s `sheets/` directory: `sheets/<identifier>.md`.
+The identifier is the lowercase filename, using digits and hyphens (`esp32-devkitc-v4`).
+Files beginning with `_`, such as `_template.md`, are not listed.
 
-Une fiche a deux parties :
+A sheet has two parts:
 
-1. un **en-tête YAML** entre deux lignes `---` : identité, caractéristiques, boîtier, brochage,
-   pièces. Les **clés sont en anglais**, les valeurs dans la langue de votre choix ;
-2. un **texte en Markdown** : présentation, câblage, code d'exemple, précautions.
-   Il s'affiche dans l'onglet « Utilisation ».
+1. a **YAML header** enclosed by two `---` lines: identity, specifications, package, pinout,
+   and components. The **keys are in English**; values may use either language.
+2. **Markdown text**: overview, wiring, example code, and precautions.
+   It appears in the “Usage” tab.
 
-## Préparer une fiche
+## Preparing a Sheet
 
-1. Copier `sheets/_template.md` sous le nom `sheets/<identifiant>.md` et le compléter.
-2. Construire le modèle 3D : `python tools/build_models.py <identifiant>`
-   (dépendances : `pip install -r requirements-dev.txt`). Il est écrit dans
-   `sheets/models/<identifiant>.glb`.
-3. Vérifier le résultat avec Prométhée en développement (`uvicorn app.main:app --reload`),
-   puis lancer `pytest` : les tests refusent une fiche avec des avertissements, ou dont le modèle 3D
-   n'a pas été reconstruit après une modification.
+1. Copy `sheets/_template.md` to `sheets/<identifier>.md` and complete it.
+2. Build the 3D model: `python tools/build_models.py <identifier>`
+   (dependencies: `pip install -r requirements-dev.txt`). It is written to
+   `sheets/models/<identifier>.glb`.
+3. Verify the result in the Prométhée development server (`uvicorn app.main:app --reload`),
+   then run `pytest`. The tests reject sheets with warnings or whose 3D model has not been
+   rebuilt after a change.
 
-## Identité
+## Identity
 
-| Clé            | Obligatoire | Exemple                                        |
-|----------------|-------------|------------------------------------------------|
-| `name`         | oui         | `ESP32-DevKitC V4`                             |
-| `category`     | non         | `Carte de développement` (défaut : Divers)     |
-| `manufacturer` | non         | `Espressif`                                    |
-| `part_number`  | non         | `ESP32-DevKitC-32E`                            |
-| `description`  | non         | une phrase, affichée sur la carte de la fiche  |
-| `tags`         | non         | `[wifi, bluetooth]`                            |
-| `specs`        | non         | liste `Libellé: valeur`, affichée en tableau ; les libellés sont libres |
-| `links`        | non         | liste de `{ title, url }` (datasheets, guides) |
+| Key            | Required | Example                                        |
+|----------------|----------|------------------------------------------------|
+| `name`         | yes      | `ESP32-DevKitC V4`                             |
+| `category`     | no       | `Development board` (default: Miscellaneous)   |
+| `manufacturer` | no       | `Espressif`                                    |
+| `part_number`  | no       | `ESP32-DevKitC-32E`                            |
+| `description`  | no       | a sentence displayed on the sheet card         |
+| `tags`         | no       | `[wifi, bluetooth]`                            |
+| `specs`        | no       | `Label: value` list, displayed as a table; labels are unrestricted |
+| `links`        | no       | list of `{ title, url }` (datasheets, guides)  |
 
-## Boîtier
+## Package
 
-Toutes les dimensions sont en millimètres, **vue de dessus** : `width` est horizontale,
-`length` verticale, et les positions `x`, `y` se comptent depuis le coin haut gauche.
+All dimensions are in millimetres, with a **top view**: `width` is horizontal,
+`length` is vertical, and `x`/`y` positions are measured from the top-left corner.
 
 ```yaml
 package:
   type: board          # board | module | dip | to92
   length: 54.4
   width: 27.9
-  thickness: 1.6       # épaisseur du circuit imprimé, ou hauteur du boîtier
-  color: "#16181d"     # vernis (ou corps du boîtier), toujours entre guillemets
-  marking: NE555P      # inscription d'un DIP ou d'un TO-92
-  finish: gold         # pastilles : gold (or, ENIG) ou tin (étain, HASL)
-  corner_radius: 0.8   # arrondi des coins du circuit imprimé
-  silkscreen:          # textes sérigraphiés en plus des noms de broches
+  thickness: 1.6       # PCB thickness or package height
+  color: "#16181d"     # solder mask (or package body), always in quotes
+  marking: NE555P      # marking for a DIP or TO-92
+  finish: gold         # pads: gold (ENIG) or tin (HASL)
+  corner_radius: 0.8   # board corner radius
+  silkscreen:          # printed text in addition to pin names
     - { text: EN, x: 7.2, y: 47.1, size: 1.0 }
     - { text: "ESP32-DevKitC V4", x: 14, y: 30, size: 1.2, side: bottom }
-  holes:               # perçages en plus des broches (connecteur non monté, fixation)
+  holes:               # holes in addition to pins (uninstalled connector or mounting)
     - { x: 6.46, y: 40.9, drill: 1.0, pad: 1.7, square: true }
-    - { x: 2.5, y: 2.5, drill: 3.2 }   # sans pad : trou non métallisé
+    - { x: 2.5, y: 2.5, drill: 3.2 }   # without a pad: non-plated hole
 ```
 
-| Type     | Modèle 3D                                                             |
-|----------|-----------------------------------------------------------------------|
-| `board`  | circuit imprimé complet : âme en FR4, vernis, sérigraphie, trous métallisés, pastilles, soudures |
-| `module` | comme `board`, pour les petits modules (capteurs, convertisseurs)     |
-| `dip`    | boîtier DIP : `width` = écart entre les rangées (7,62 pour un DIP-8)  |
-| `to92`   | transistor ou régulateur TO-92, face plate vers le bas de la vue, pattes longues |
+| Type     | 3D Model                                                                    |
+|----------|-----------------------------------------------------------------------------|
+| `board`  | complete PCB: FR4 core, solder mask, silkscreen, plated holes, pads, solder joints |
+| `module` | like `board`, for small modules (sensors, converters)                       |
+| `dip`    | DIP package: `width` = spacing between rows (7.62 for a DIP-8)              |
+| `to92`   | TO-92 transistor or regulator, flat face toward the bottom of the view with long leads |
 
-Sur une carte, chaque broche reçoit un trou métallisé de 1 mm et une pastille de 1,7 mm, carrée
-pour la broche n° 1, et une soudure du côté opposé au corps des barrettes.
+On a board, each pin receives a 1 mm plated hole and a 1.7 mm pad, with a square pad for pin 1,
+and solder on the side opposite the headers.
 
-## Brochage
+## Pinout
 
 ```yaml
 pinout:
-  pitch: 2.54            # écart entre broches (défaut : 2,54 ; 1,27 en to92)
+  pitch: 2.54            # pin spacing (default: 2.54; 1.27 for to92)
   rows:
     - name: J2
       side: left         # left | right | top | bottom
-      start: 4.6         # position de la 1re broche le long du côté (défaut : rangée centrée)
-      inset: 1.27        # distance au bord (défaut : 1,27 ; 0 pour dip et to92)
+      start: 4.6         # position of the first pin along the side (default: centered row)
+      inset: 1.27        # distance from edge (default: 1.27; 0 for dip and to92)
       pins:
-        - { n: 1, name: 3V3, type: power, description: "Sortie 3,3 V" }
+        - { n: 1, name: 3V3, type: power, description: "3.3 V output" }
         - { n: 3, name: GPIO36, silkscreen: SVP, type: analog, functions: [ADC1_CH0, SENSOR_VP] }
 ```
 
-Les broches d'une rangée sont données **dans l'ordre physique** : de haut en bas pour
-`left` et `right`, de gauche à droite pour `top` et `bottom`. Pour un DIP, la rangée de droite
-se lit donc 8, 7, 6, 5.
+Pins in a row are listed in **physical order**: top to bottom for `left` and `right`, and
+left to right for `top` and `bottom`. For a DIP package, the right-hand row therefore reads
+8, 7, 6, 5.
 
-| Clé           | Rôle                                                  |
-|---------------|-------------------------------------------------------|
-| `n`           | numéro affiché (défaut : rang dans la rangée)         |
-| `name`        | nom de la broche, dans le tableau et le schéma        |
-| `silkscreen`  | texte imprimé à côté de la broche sur la vraie carte, s'il diffère du nom |
-| `type`        | couleur et filtre (voir ci-dessous)                   |
-| `functions`   | fonctions alternatives : `[SDA, ADC2_CH0]`            |
-| `description` | précision affichée au survol et dans le tableau       |
+| Key           | Purpose                                                    |
+|---------------|------------------------------------------------------------|
+| `n`           | displayed number (default: position in the row)            |
+| `name`        | pin name in the table and diagram                          |
+| `silkscreen`  | text printed beside the pin on the actual board, if different from `name` |
+| `type`        | colour and filter (see below)                              |
+| `functions`   | alternative functions: `[SDA, ADC2_CH0]`                   |
+| `description` | detail shown on hover and in the table                     |
 
-| Type       | Affiché comme   |
-|------------|-----------------|
-| `power`    | Alimentation    |
-| `ground`   | Masse           |
-| `gpio`     | E/S numérique   |
-| `analog`   | Analogique      |
-| `pwm`      | PWM             |
-| `i2c`      | I²C             |
-| `spi`      | SPI             |
-| `uart`     | UART            |
-| `control`  | Contrôle (reset, enable, boot…) |
-| `reserved` | Réservée (à ne pas utiliser) |
-| `nc`       | Non connectée   |
-| `other`    | Autre           |
+| Type       | Display name        |
+|------------|---------------------|
+| `power`    | Power               |
+| `ground`   | Ground              |
+| `gpio`     | Digital I/O         |
+| `analog`   | Analog              |
+| `pwm`      | PWM                 |
+| `i2c`      | I²C                 |
+| `spi`      | SPI                 |
+| `uart`     | UART                |
+| `control`  | Control (reset, enable, boot…) |
+| `reserved` | Reserved (do not use) |
+| `nc`       | No connection       |
+| `other`    | Other               |
 
-## Pièces (modèle 3D)
+## Components (3D Model)
 
-Chaque pièce posée sur l'appareil est soit un **modèle réel** de la bibliothèque 3D de KiCad,
-déclaré dans `tools/parts.yaml` et converti dans `tools/parts/`, soit une **forme simple**
-pour ce qui n'y existe pas (relais, afficheur, bornier…).
+Each component placed on a device is either a **real model** from the KiCad 3D library,
+declared in `tools/parts.yaml` and converted into `tools/parts/`, or a **simple shape**
+for components that do not have a model (relay, display, terminal block, etc.).
 
 ```yaml
 parts:
-  - { name: Module ESP32, model: esp32-wroom-32e, x: 13.95, y: 12.75, color: "#c8ccd2", label: "ESP32-WROOM-32E" }
-  - { name: Barrette J2, model: pin-header-1x19, x: 1.27, y: 27.46, side: bottom }
-  - { name: Microcontrôleur, model: tqfp-32, x: 9, y: 26.5, rotation: 45, label: "ATMEGA328P" }
-  - { name: Relais, shape: box, x: 20, y: 15, width: 15.5, length: 19, height: 15.5, color: "#1f5fc4", label: "SRD-05VDC" }
+  - { name: ESP32 Module, model: esp32-wroom-32e, x: 13.95, y: 12.75, color: "#c8ccd2", label: "ESP32-WROOM-32E" }
+  - { name: J2 Header, model: pin-header-1x19, x: 1.27, y: 27.46, side: bottom }
+  - { name: Microcontroller, model: tqfp-32, x: 9, y: 26.5, rotation: 45, label: "ATMEGA328P" }
+  - { name: Relay, shape: box, x: 20, y: 15, width: 15.5, length: 19, height: 15.5, color: "#1f5fc4", label: "SRD-05VDC" }
 ```
 
-| Clé        | Rôle                                                                  |
-|------------|-----------------------------------------------------------------------|
-| `model`    | nom d'une pièce de `tools/parts.yaml`                                 |
-| `shape`    | à défaut de modèle : `box` ou `cylinder`, avec `width`, `length`, `height` |
-| `x`, `y`   | position du **centre** de la pièce                                    |
-| `rotation` | rotation en degrés, sens inverse des aiguilles d'une montre vue de dessus |
-| `side`     | `top` (défaut) ou `bottom` : pièce montée sous la carte (barrettes mâles…) |
-| `z`        | décalage vertical en mm (rarement utile)                              |
-| `color`    | couleur de la forme simple, et de la pièce dans le schéma 2D          |
-| `label`    | inscription imprimée sur le dessus (puces, blindages)                 |
+| Key        | Purpose                                                           |
+|------------|-------------------------------------------------------------------|
+| `model`    | name of a component in `tools/parts.yaml`                         |
+| `shape`    | when no model exists: `box` or `cylinder`, with `width`, `length`, `height` |
+| `x`, `y`   | position of the **centre** of the component                       |
+| `rotation` | angle in degrees, counterclockwise in the top view                |
+| `side`     | `top` (default) or `bottom`: component mounted on underside (male headers…) |
+| `z`        | vertical offset in mm (rarely needed)                             |
+| `color`    | colour of a simple shape and of the component in the 2D diagram   |
+| `label`    | printed text on top (chips, shields)                              |
 
-Pour un `dip` ou un `to92`, une seule pièce : le boîtier, centré sur l'appareil ; son inscription
-vient de `package.marking`.
+For a `dip` or `to92`, a single component represents the package and is centred on the device;
+its text comes from `package.marking`.
 
-Pour ajouter un modèle KiCad : ajouter son fichier STEP dans `tools/parts.yaml`, puis relancer
-`python tools/build_models.py`. Un modèle STEP de fabricant peut aussi y être ajouté si sa
-licence permet de le redistribuer.
+To add a KiCad model, add its STEP file to `tools/parts.yaml`, then rerun
+`python tools/build_models.py`. A manufacturer's STEP model may also be added if its
+license permits redistribution.
 
-## Liste de matériel (nouveaux articles)
+## Equipment Catalog (New Items)
 
-`sheets/catalog.yaml` liste du matériel courant, avec ou sans fiche : le champ **Nom** d'un
-nouvel article la propose, et choisir un appareil remplit les autres champs de l'article.
-Seuls `id`, `name` et `category` sont obligatoires.
+`sheets/catalog.yaml` lists commonly used equipment, whether or not it already has a sheet.
+The **Name** field of a new item suggests entries from this list, and choosing a device fills in
+all the other item fields. Only `id`, `name`, and `category` are required.
 
 ```yaml
 devices:
-  - id: l7805                     # unique ; c'est aussi l'identifiant de sa fiche (sheets/l7805.md)
-    name: Régulateur L7805        # nom proposé, et nom de l'article
-    category: Alimentation
+  - id: l7805                     # unique; also the sheet identifier (sheets/l7805.md)
+    name: L7805 Voltage Regulator # suggested name and item name
+    category: Power Supply
     manufacturer: STMicroelectronics
-    part_number: L7805CV          # avec le fabricant : « Réf. : … » dans les notes de l'article
-    package: TO-220               # boîtier
-    value: 5 V                    # valeur
-    description: Régulateur linéaire 5 V, 1,5 A, en TO-220.   # cherchée en dernier recours
-    links: [https://www.st.com/resource/en/datasheet/l78.pdf] # fiche technique
+    part_number: L7805CV          # with manufacturer: “Ref.: …” in item notes
+    package: TO-220               # package
+    value: 5 V                    # value
+    description: 5 V, 1.5 A linear voltage regulator in TO-220.   # used as a fallback
+    links: [https://www.st.com/resource/en/datasheet/l78.pdf] # datasheet
   - id: resistor-1-4w
-    name: Résistance 1/4 W
-    category: Résistance
+    name: 1/4 W Resistor
+    category: Resistor
     package: THT 1/4 W
-    values: [10 Ω, 220 Ω, 1 kΩ, 10 kΩ]  # valeurs proposées dans le champ Valeur
+    values: [10 Ω, 220 Ω, 1 kΩ, 10 kΩ]  # values suggested in the Value field
 ```
 
-Quand une fiche porte l'identifiant d'un appareil de la liste, l'article est lié à cette fiche :
-chaque fiche livrée a donc son entrée dans la liste (les tests le vérifient). Les liens de la liste
-et des fiches sont vérifiés par `python tools/check_links.py` (workflow **Links**, chaque semaine
-et à chaque modification).
+When a sheet uses the identifier of a device in the catalog, the item is linked to that sheet.
+Every distributed sheet therefore has an entry in the catalog (verified by the tests). Links in
+both the catalog and sheets are checked by `python tools/check_links.py` (the **Links** workflow,
+weekly and on every change).
 
-## Pièges du YAML
+## YAML Pitfalls
 
-- Mettre entre guillemets les couleurs (`"#1d5c3a"`) et les textes qui contiennent `:` ou `#`.
-- Les noms `ON`, `OFF`, `YES`, `NO` restent du texte dans Prométhée, mais d'autres outils YAML
-  les lisent comme des booléens : les guillemets ne coûtent rien.
-- L'indentation se fait avec des espaces, jamais des tabulations.
+- Put colours (`"#1d5c3a"`) and text containing `:` or `#` in quotes.
+- The names `ON`, `OFF`, `YES`, and `NO` remain text in Prométhée, but other YAML tools
+  interpret them as booleans. Quoting costs nothing.
+- Use spaces for indentation, never tabs.
 
-Une fiche invalide n'empêche pas les autres de s'afficher : elle est signalée en haut de la page
-**Fiches**, avec le message d'erreur.
+An invalid sheet does not prevent other sheets from appearing. It is reported at the top of the
+**Sheets** page, with the error message.

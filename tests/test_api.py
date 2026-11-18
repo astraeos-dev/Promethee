@@ -35,7 +35,7 @@ def test_bundled_sheets_and_models_are_served():
 
 
 def test_inventory_lifecycle(client):
-    item = client.post("/api/items", json={"name": "Résistance", "value": "10 kΩ", "quantity": 10, "threshold": 5}).json()
+    item = client.post("/api/items", json={"name": "Resistance", "value": "10 kΩ", "quantity": 10, "threshold": 5}).json()
     response = client.post(f"/api/items/{item['id']}/movements", json={"delta": -7, "reason": "Projet"})
     assert response.json()["quantity"] == 3
     assert client.post(f"/api/items/{item['id']}/movements", json={"delta": -4}).status_code == 422

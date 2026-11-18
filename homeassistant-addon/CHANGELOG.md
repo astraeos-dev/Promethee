@@ -1,54 +1,54 @@
-# Journal des modifications
+# Changelog
 
 ## 0.5.1
 
-- **Nouvel article** : le champ « Nom » propose une liste de matériel courant (90 références
-  classées par catégorie, avec recherche). Choisir un nom remplit la catégorie, la valeur, le
-  boîtier, la référence et la fiche liée ; le champ « Valeur » propose ensuite les valeurs
-  courantes (résistances, condensateurs, LED…). Un champ rempli à la main n'est jamais remplacé.
-- **Demander une fiche** ouvre directement le formulaire de demande sur GitHub ; la page de liste
-  de la 0.5.0 disparaît.
-- « Ajouter au stock », depuis une fiche, remplit aussi le boîtier et la référence.
-- Formulaire d'article : la touche Entrée enregistre, au lieu de fermer le formulaire.
-- Liens corrigés vers les fiches techniques de l'ESP32-S3-DevKitC-1, du HC-SR501, du MPU-6050,
-  du SG90, de l'ULN2803A et du 2N7000.
+- **New item**: the “Name” field now suggests a list of commonly used equipment (90 references,
+  categorized and searchable). Selecting a name fills in the category, value, package,
+  reference, and linked sheet; the “Value” field then suggests common values
+  (resistors, capacitors, LEDs, etc.). A manually entered field is never overwritten.
+- **Request a sheet** now opens the GitHub request form directly; the list page from 0.5.0
+  has been removed.
+- “Add to inventory”, from a sheet, also fills in the package and reference.
+- Item form: pressing Enter saves it instead of closing the form.
+- Fixed links to the datasheets for the ESP32-S3-DevKitC-1, HC-SR501, MPU-6050,
+  SG90, ULN2803A, and 2N7000.
 
 ## 0.5.0
 
-- **Demander une fiche** : liste de matériel courant (une soixantaine d'appareils : cartes,
-  capteurs, afficheurs, modules, alimentation, moteurs, circuits intégrés, transistors, diodes).
-  Chaque appareil ouvre le formulaire GitHub déjà rempli ; « Autre appareil » ouvre le formulaire vide.
-- Formulaire de demande : la catégorie devient un champ texte, pré-rempli depuis la liste.
-- Vérification hebdomadaire des liens vers les fiches techniques (workflow Links).
+- **Request a sheet**: list of commonly used equipment (around sixty devices: boards,
+  sensors, displays, modules, power supplies, motors, integrated circuits, transistors, and diodes).
+  Selecting a device opens a prefilled GitHub form; “Other device” opens a blank form.
+- Request form: the category is now a text field, prefilled from the list.
+- Weekly verification of datasheet links (Links workflow).
 
 ## 0.4.0
 
-- **Vue 3D corrigée** : elle ne se chargeait pas (fichier Three.js absent de l'image 0.3.0).
-- **Modèle 3D complet de chaque appareil** : circuit imprimé (vernis, sérigraphie de la vraie
-  carte, trous métallisés, pastilles, soudures) et composants réels issus de la bibliothèque KiCad
-  (module ESP32-WROOM-32E, barrettes, connecteurs USB, puces, boîtiers DIP-8 et TO-92) ;
-  téléchargeable depuis la fiche (`.glb`).
-- Vue 3D plus légère : affichage à la demande, fichiers compressés à l'envoi.
-- **Fiches livrées avec les mises à jour** : l'éditeur disparaît ; nouvelles fiches et corrections
-  se demandent sur GitHub (boutons « Demander une fiche » et « Signaler une erreur »).
-  Le dossier `sheets` de `/addon_configs` n'est plus utilisé.
-- Schéma 2D : les pièces réelles y sont dessinées à l'échelle.
+- **Fixed 3D view**: it would not load (Three.js file missing from the 0.3.0 image).
+- **Complete 3D model for every device**: printed circuit board (solder mask, silkscreen from the real
+  board, plated holes, pads, solder joints) and real components from the KiCad library
+  (ESP32-WROOM-32E module, headers, USB connectors, chips, DIP-8 and TO-92 packages);
+  downloadable from the sheet (`.glb`).
+- Lighter 3D view: on-demand rendering and compressed files during transfer.
+- **Sheets included with updates**: the editor has been removed; new sheets and corrections
+  are requested through GitHub (buttons “Request a sheet” and “Report an error”).
+  The `sheets` folder in `/addon_configs` is no longer used.
+- 2D diagram: real components are drawn to scale.
 
 ## 0.3.0
 
-- Code, API et base de données en anglais ; l'interface reste en français.
-- **Format des fiches** : clés YAML en anglais (`name`, `category`, `package`, `pinout`, `rows`,
-  `pins`…). Dossier `fiches/` renommé `sheets/`.
-- **Capteurs renommés** : `sensor.promethee_items`, `_parts`, `_low_stock`, `_sheets`
-  (attribut `items`). Mettre à jour les automatisations.
-- Import CSV : en-têtes anglais, ou français comme avant.
+- Code, API, and database are in English; the interface remains in French.
+- **Sheet format**: YAML keys are in English (`name`, `category`, `package`, `pinout`, `rows`,
+  `pins`, etc.). The `fiches/` folder was renamed to `sheets/`.
+- **Sensors renamed**: `sensor.promethee_items`, `_parts`, `_low_stock`, `_sheets`
+  (`items` attribute). Update automations accordingly.
+- CSV import: English headers, or French headers as before.
 
 ## 0.2.0
 
-- Module complémentaire Home Assistant : interface dans la barre latérale (Ingress).
-- Capteurs `sensor.promethee_*` publiés dans Home Assistant.
-- Point d'accès `/api/alerts` : articles sous leur seuil.
+- Home Assistant add-on: interface in the sidebar (Ingress).
+- `sensor.promethee_*` sensors published in Home Assistant.
+- `/api/alerts` endpoint: items below their threshold.
 
 ## 0.1.0
 
-- Stock, fiches techniques, vue 3D, brochage, éditeur, import et export CSV.
+- Inventory, datasheets, 3D view, pinout, editor, and CSV import/export.

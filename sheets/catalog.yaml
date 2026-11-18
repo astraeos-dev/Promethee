@@ -1,344 +1,344 @@
-# Liste non exhaustive de matériel courant, proposée par le champ « Nom » d'un nouvel article :
-# choisir un nom remplit la catégorie, la valeur, le boîtier, la référence et, si l'appareil
-# a déjà une fiche (même identifiant que sheets/<id>.md), la fiche liée.
+# A non-exhaustive list of common components, suggested by the "Name" field when creating a new item:
+# Selecting a name automatically populates the category, value, package, and part number;
+# if the component already has an associated datasheet (matching the identifier in sheets/<id>.md), that file is linked as well.
 #
-# Clés : id, name, category, manufacturer, part_number, package (boîtier), value (valeur),
-# values (valeurs proposées), description, dimensions, links (fiche technique, documentation).
-# Les liens sont vérifiés par la CI (tools/check_links.py, workflow Links).
+# Keys: id, name, category, manufacturer, part_number, package, value,
+# values (suggested values), description, dimensions, links (datasheet, documentation).
+# Links are verified by the CI process (via tools/check_links.py, in the "Links" workflow).
 
 devices:
-  # ---------- Cartes de développement ----------
+  # ---------- Development Boards ----------
   - id: arduino-uno-r3
     name: Arduino Uno R3
-    category: Carte de développement
+    category: Development board
     manufacturer: Arduino
     part_number: A000066
-    description: Carte ATmega328P en 5 V, la référence pour débuter.
+    description: Development board with ATmega328P, 5 V, the reference for beginners.
     dimensions: 68,6 × 53,4 mm
     links:
       - https://docs.arduino.cc/hardware/uno-rev3/
   - id: arduino-mega-2560
     name: Arduino Mega 2560 Rev3
-    category: Carte de développement
+    category: Development board
     manufacturer: Arduino
     part_number: A000067
-    description: ATmega2560, 54 entrées-sorties numériques et 16 entrées analogiques.
+    description: Development board with ATmega2560, 54 digital I/O pins and 16 analog inputs.
     dimensions: 101,5 × 53,3 mm
     links:
       - https://docs.arduino.cc/hardware/mega-2560/
   - id: arduino-nano-every
     name: Arduino Nano Every
-    category: Carte de développement
+    category: Development board
     manufacturer: Arduino
     part_number: ABX00028
-    description: Format Nano avec un ATmega4809, en 5 V.
+    description: Nano format with an ATmega4809, at 5 V.
     dimensions: 45 × 18 mm
     links:
       - https://docs.arduino.cc/hardware/nano-every/
   - id: arduino-pro-mini
     name: Arduino Pro Mini
-    category: Carte de développement
-    manufacturer: Arduino (et clones)
+    category: Development board
+    manufacturer: Arduino (and clones)
     part_number: ATmega328P
-    description: Carte minimale sans USB, en 3,3 V à 8 MHz ou en 5 V à 16 MHz.
+    description: Minimal board without USB, available at 3.3 V and 8 MHz or 5 V and 16 MHz.
     dimensions: 33 × 18 mm
     links:
       - https://docs.arduino.cc/retired/boards/arduino-pro-mini/
   - id: raspberry-pi-pico
     name: Raspberry Pi Pico
-    category: Carte de développement
+    category: Development board
     manufacturer: Raspberry Pi
     part_number: SC0915
-    description: Microcontrôleur RP2040 double cœur, en 3,3 V.
+    description: Dual-core RP2040 microcontroller, operating at 3.3 V.
     dimensions: 51 × 21 mm
     links:
       - https://datasheets.raspberrypi.com/pico/pico-datasheet.pdf
   - id: raspberry-pi-pico-w
     name: Raspberry Pi Pico W
-    category: Carte de développement
+    category: Development board
     manufacturer: Raspberry Pi
     part_number: SC0918
-    description: Pico avec Wi-Fi et Bluetooth.
+    description: Pico with Wi-Fi and Bluetooth.
     dimensions: 51 × 21 mm
     links:
       - https://datasheets.raspberrypi.com/picow/pico-w-datasheet.pdf
   - id: raspberry-pi-pico-2
     name: Raspberry Pi Pico 2
-    category: Carte de développement
+    category: Development board
     manufacturer: Raspberry Pi
     part_number: RP2350
-    description: Pico avec le microcontrôleur RP2350 (cœurs Arm ou RISC-V).
+    description: Pico with the RP2350 microcontroller (Arm or RISC-V cores).
     dimensions: 51 × 21 mm
     links:
       - https://datasheets.raspberrypi.com/pico/pico-2-datasheet.pdf
   - id: esp32-s3-devkitc-1
     name: ESP32-S3-DevKitC-1
-    category: Carte de développement
+    category: Development board
     manufacturer: Espressif
     part_number: ESP32-S3-DevKitC-1
-    description: ESP32-S3 avec Wi-Fi, Bluetooth LE et USB natif.
+    description: ESP32-S3 with Wi-Fi, Bluetooth LE, and native USB.
     links:
       - https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-devkitc-1/index.html
       - https://www.espressif.com/sites/default/files/documentation/esp32-s3_datasheet_en.pdf
   - id: esp32-c3-devkitm-1
     name: ESP32-C3-DevKitM-1
-    category: Carte de développement
+    category: Development board
     manufacturer: Espressif
     part_number: ESP32-C3-DevKitM-1
-    description: ESP32-C3 à cœur RISC-V, Wi-Fi et Bluetooth LE.
+    description: ESP32-C3 with RISC-V core, Wi-Fi and Bluetooth LE.
     links:
       - https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32c3/esp32-c3-devkitm-1/user_guide.html
       - https://www.espressif.com/sites/default/files/documentation/esp32-c3_datasheet_en.pdf
   - id: esp32-c3-supermini
     name: ESP32-C3 SuperMini
-    category: Carte de développement
-    manufacturer: Générique
+    category: Development board
+    manufacturer: Generic
     part_number: ESP32-C3
-    description: Très petite carte ESP32-C3 avec USB-C.
+    description: ESP32-C3 with a very small form factor and USB-C.
     dimensions: 22,5 × 18 mm
     links:
       - https://www.espressif.com/sites/default/files/documentation/esp32-c3_datasheet_en.pdf
   - id: esp32-cam
     name: ESP32-CAM
-    category: Carte de développement
+    category: Development board
     manufacturer: Ai-Thinker
     part_number: ESP32-CAM
-    description: ESP32 avec caméra OV2640 et lecteur de carte micro-SD.
+    description: ESP32 with OV2640 camera and micro-SD card reader.
     dimensions: 40,5 × 27 mm
     links:
       - https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf
   - id: nodemcu-esp8266-v3
     name: NodeMCU v3 (ESP8266)
-    category: Carte de développement
-    manufacturer: Générique (LoLin)
+    category: Development board
+    manufacturer: Generic (LoLin)
     part_number: ESP-12E
-    description: ESP8266 Wi-Fi avec pont USB-série CH340.
-    dimensions: environ 58 × 31 mm
+    description: ESP8266 Wi-Fi with USB-to-Serial bridge CH340.
+    dimensions: approximately 58 × 31 mm
     links:
       - https://www.espressif.com/sites/default/files/documentation/0a-esp8266ex_datasheet_en.pdf
   - id: wemos-d1-mini
     name: WEMOS D1 mini
-    category: Carte de développement
+    category: Development board
     manufacturer: WEMOS
     part_number: D1 mini
-    description: Petite carte ESP8266 Wi-Fi.
-    dimensions: 34,2 × 25,6 mm
+    description: Small ESP8266 Wi-Fi board.
+    dimensions: 34.2 × 25.6 mm
     links:
       - https://www.wemos.cc/en/latest/d1/d1_mini.html
   - id: seeed-xiao-esp32c3
     name: Seeed Studio XIAO ESP32C3
-    category: Carte de développement
+    category: Development board
     manufacturer: Seeed Studio
     part_number: XIAO ESP32C3
-    description: Carte ESP32-C3 au format XIAO.
+    description: ESP32-C3 board in the XIAO form factor.
     dimensions: 21 × 17,8 mm
     links:
       - https://wiki.seeedstudio.com/XIAO_ESP32C3_Getting_Started/
   - id: stm32-blue-pill
-    name: "« Blue Pill » STM32F103C8T6"
-    category: Carte de développement
-    manufacturer: Générique
+    name: "STM32F103C8T6 «Blue Pill»"
+    category: Development board
+    manufacturer: Generic
     part_number: STM32F103C8T6
-    description: Cortex-M3 à 72 MHz, en 3,3 V.
+    description: Cortex-M3 at 72 MHz, powered at 3.3 V.
     dimensions: 53 × 22,5 mm
     links:
       - https://www.st.com/resource/en/datasheet/stm32f103c8.pdf
   - id: esp32-devkitc-v4
     name: ESP32-DevKitC V4
-    category: Carte de développement
+    category: Development board
     manufacturer: Espressif
     part_number: ESP32-DevKitC-32E
-    description: Carte ESP32 Wi-Fi et Bluetooth, 38 broches.
+    description: ESP32 Wi-Fi and Bluetooth board, 38 pins.
     dimensions: 54,4 × 27,9 mm
     links:
       - https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32/esp32-devkitc/user_guide.html
       - https://www.espressif.com/sites/default/files/documentation/esp32_datasheet_en.pdf
   - id: arduino-nano
     name: Arduino Nano
-    category: Carte de développement
+    category: Development board
     manufacturer: Arduino
     part_number: A000005
-    description: Petite carte ATmega328P en 5 V, à enficher sur plaque d'essai.
+    description: Small 5V ATmega328P board, designed to be plugged into a breadboard.
     dimensions: 45 × 18 mm
     links:
       - https://docs.arduino.cc/hardware/nano/
 
   - id: enc28j60-ethernet-module
     name: Ethernet Shield ENC28J60
-    category: Carte de développement
+    category: Development board
     manufacturer: AZ-Delivery
     part_number: ENC28J60
-    description: Module Ethernet SPI 10/100 Mbit avec contrôleur ENC28J60 et connecteur RJ45.
+    description: Ethernet SPI 10/100 Mbit module with ENC28J60 controller and RJ45 connector.
     dimensions: 50,7 × 32,7 × 17,3 mm
     links:
       - https://www.az-delivery.de/fr/products/enc28j60-netzwerkmodul
 
-  # ---------- Capteurs ----------
+  # ---------- Sensors ----------
   - id: dht22
     name: DHT22 (AM2302)
-    category: Capteur
+    category: Sensor
     manufacturer: Aosong
     part_number: AM2302
-    package: 4 broches
-    description: Température et humidité, sortie numérique sur un fil.
+    package: 4-pin
+    description: Temperature and humidity, digital output on a single wire.
     links:
       - https://www.sparkfun.com/datasheets/Sensors/Temperature/DHT22.pdf
   - id: dht11
     name: DHT11
-    category: Capteur
+    category: Sensor
     manufacturer: Aosong
     part_number: DHT11
-    package: 4 broches
-    description: Température et humidité, entrée de gamme.
+    package: 4-pin
+    description: Temperature and humidity, digital output on a single wire.
     links:
       - https://www.mouser.com/datasheet/2/758/DHT11-Technical-Data-Sheet-Translated-Version-1143054.pdf
   - id: ds18b20
     name: DS18B20
-    category: Capteur
+    category: Sensor
     manufacturer: Analog Devices (Maxim)
     part_number: DS18B20
-    package: TO-92 ou sonde étanche
-    description: Sonde de température 1-Wire, en boîtier TO-92 ou étanche.
+    package: TO-92 or waterproof probe
+    description: 1-Wire temperature sensor in a TO-92 package or with a waterproof probe.
     links:
       - https://www.analog.com/media/en/technical-documentation/data-sheets/DS18B20.pdf
   - id: hc-sr04
     name: HC-SR04
-    category: Capteur
-    manufacturer: Générique
+    category: Sensor
+    manufacturer: Generic
     part_number: HC-SR04
     package: Module
-    description: Télémètre à ultrasons, de 2 cm à 4 m.
+    description: Ultrasonic distance sensor with a range from 2 cm to 4 m.
     dimensions: 45 × 20 mm
     links:
       - https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf
   - id: hc-sr501
     name: HC-SR501
-    category: Capteur
-    manufacturer: Générique
+    category: Sensor
+    manufacturer: Generic
     part_number: HC-SR501
     package: Module
-    description: Détecteur de mouvement infrarouge (PIR), sensibilité et durée réglables.
+    description: PIR motion detector with adjustable sensitivity and duration.
     dimensions: 32 × 24 mm
     links:
       - https://learn.adafruit.com/pir-passive-infrared-proximity-motion-sensor
   - id: bmp280-module
     name: Module BMP280
-    category: Capteur
+    category: Sensor
     manufacturer: Bosch Sensortec
     part_number: BMP280
     package: Module
-    description: Pression atmosphérique et température, en I²C ou SPI.
+    description: Atmospheric pressure and temperature sensor with I²C or SPI interface.
     links:
       - https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bmp280-ds001.pdf
   - id: bh1750-module
     name: Module BH1750 (GY-302)
-    category: Capteur
+    category: Sensor
     manufacturer: ROHM
     part_number: BH1750FVI
     package: Module
-    description: Luminosité en lux, en I²C.
+    description: Ambient light sensor in lux units, with I²C interface.
     links:
       - https://www.mouser.com/datasheet/2/348/bh1750fvi-e-186247.pdf
   - id: mpu6050-gy521
     name: Module MPU-6050 (GY-521)
-    category: Capteur
+    category: Sensor
     manufacturer: TDK InvenSense
     part_number: MPU-6050
     package: Module
-    description: Accéléromètre et gyroscope 3 axes, en I²C.
+    description: 3-axis accelerometer and gyroscope with I²C interface.
     links:
       - https://cdn.sparkfun.com/datasheets/Components/General%20IC/PS-MPU-6000A.pdf
   - id: vl53l0x-module
     name: Module VL53L0X
-    category: Capteur
+    category: Sensor
     manufacturer: STMicroelectronics
     part_number: VL53L0X
     package: Module
-    description: Distance par temps de vol laser, jusqu'à 2 m.
+    description: Laser time-of-flight distance sensor, up to 2 m.
     links:
       - https://www.st.com/resource/en/datasheet/vl53l0x.pdf
   - id: ina219-module
     name: Module INA219
-    category: Capteur
+    category: Sensor
     manufacturer: Texas Instruments
     part_number: INA219
     package: Module
-    description: Mesure de courant et de tension, en I²C.
+    description: Current and voltage measurement module with I²C interface.
     links:
       - https://www.ti.com/lit/ds/symlink/ina219.pdf
   - id: mq-2
     name: Module MQ-2
-    category: Capteur
+    category: Sensor
     manufacturer: Hanwei
     part_number: MQ-2
     package: Module
-    description: Détecteur de gaz combustibles et de fumée.
+    description: Detector for combustible gases and smoke.
     links:
       - https://www.pololu.com/file/0J309/MQ2.pdf
   - id: bme280-module
     name: Module BME280
-    category: Capteur
+    category: Sensor
     manufacturer: Bosch Sensortec
     part_number: BME280
     package: Module
-    description: Température, humidité et pression, en I²C.
+    description: Temperature, humidity, and pressure sensor with I²C interface.
     links:
       - https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme280-ds002.pdf
   - id: ldr
-    name: Photorésistance (LDR)
-    category: Capteur
+    name: Photoresistor (LDR)
+    category: Sensor
     part_number: GL5528
     package: 5 mm
-    description: Résistance qui baisse avec la lumière, à monter en pont diviseur.
+    description: Resistor whose resistance decreases with light; use in a voltage divider.
   - id: ntc-10k
-    name: Thermistance CTN 10 kΩ
-    category: Capteur
-    package: Goutte époxy
+    name: NTC Thermistor 10 kΩ
+    category: Sensor
+    package: Epoxy bead
     value: 10 kΩ, B 3950
-    description: Mesure de température par variation de résistance.
+    description: Temperature measurement through resistance variation.
 
-  # ---------- Afficheurs et éclairage ----------
+  # ---------- Displays and Lighting ----------
   - id: ssd1306-oled-128x64
-    name: "Écran OLED 0,96\" I²C (SSD1306)"
-    category: Afficheur
-    manufacturer: Générique
+    name: "0.96-inch I²C OLED Display (SSD1306)"
+    category: Display
+    manufacturer: Generic
     part_number: SSD1306 128 × 64
     package: Module
     value: 128 × 64
-    description: Écran monochrome de 128 × 64 pixels.
-    dimensions: environ 27 × 27 mm
+    description: Monochrome 128 × 64-pixel display.
+    dimensions: approximately 27 × 27 mm
     links:
       - https://cdn-shop.adafruit.com/datasheets/SSD1306.pdf
   - id: lcd-1602-i2c
-    name: Écran LCD 1602 avec adaptateur I²C
-    category: Afficheur
-    manufacturer: Générique
+    name: 1602 LCD with I²C Adapter
+    category: Display
+    manufacturer: Generic
     part_number: HD44780 + PCF8574
     package: Module
     value: 16 × 2
-    description: Deux lignes de 16 caractères, pilotées en I²C.
+    description: Two lines of 16 characters, controlled over I²C.
     dimensions: 80 × 36 mm
     links:
       - https://www.sparkfun.com/datasheets/LCD/HD44780.pdf
       - https://www.ti.com/lit/ds/symlink/pcf8574.pdf
   - id: max7219-matrix-8x8
-    name: Matrice LED 8 × 8 MAX7219
-    category: Afficheur
-    manufacturer: Générique
+    name: 8 × 8 LED Matrix MAX7219
+    category: Display
+    manufacturer: Generic
     part_number: MAX7219
     package: Module
     value: 8 × 8
-    description: 64 LED pilotées en SPI, modules chaînables.
-    dimensions: environ 32 × 32 mm
+    description: 64 LEDs controlled over SPI; modules can be daisy-chained.
+    dimensions: approximately 32 × 32 mm
     links:
       - https://www.analog.com/media/en/technical-documentation/data-sheets/MAX7219-MAX7221.pdf
   - id: ws2812b
-    name: LED adressables WS2812B
-    category: Afficheur
+    name: Addressable WS2812B LEDs
+    category: Display
     manufacturer: Worldsemi
     part_number: WS2812B
-    package: Ruban, anneau ou matrice
-    description: LED RVB pilotées par un seul fil (rubans, anneaux, matrices).
+    package: Strip, ring, or matrix
+    description: RGB LEDs controlled by a single data wire (strips, rings, matrices).
     links:
       - https://cdn-shop.adafruit.com/datasheets/WS2812B.pdf
 
@@ -349,242 +349,242 @@ devices:
     manufacturer: Nordic Semiconductor
     part_number: nRF24L01+
     package: Module
-    value: 2,4 GHz
-    description: Radio 2,4 GHz pilotée en SPI.
-    dimensions: environ 29 × 15 mm
+    value: 2.4 GHz
+    description: 2.4 GHz radio controlled over SPI.
+    dimensions: approximately 29 × 15 mm
     links:
       - https://www.sparkfun.com/datasheets/Components/SMD/nRF24L01Pluss_Preliminary_Product_Specification_v1_0.pdf
   - id: hc-05
     name: Module Bluetooth HC-05
     category: Communication
-    manufacturer: Générique
+    manufacturer: Generic
     part_number: HC-05
     package: Module
-    description: Bluetooth classique (profil série), maître ou esclave.
-    dimensions: environ 37 × 16 mm
+    description: Classic Bluetooth (serial profile), operating as master or slave.
+    dimensions: approximately 37 × 16 mm
     links:
       - https://components101.com/sites/default/files/component_datasheet/HC-05%20Datasheet.pdf
 
   # ---------- Modules ----------
   - id: ds3231-rtc
-    name: Module horloge DS3231 (ZS-042)
+    name: DS3231 Real-Time Clock Module (ZS-042)
     category: Module
     manufacturer: Analog Devices (Maxim)
     part_number: DS3231
     package: Module
-    description: Horloge temps réel précise, avec pile de sauvegarde et EEPROM.
-    dimensions: environ 38 × 22 mm
+    description: Accurate real-time clock with backup battery and EEPROM.
+    dimensions: approximately 38 × 22 mm
     links:
       - https://www.analog.com/media/en/technical-documentation/data-sheets/DS3231.pdf
   - id: relay-module-1ch-5v
-    name: Module relais 1 voie 5 V
+    name: 1-Channel 5 V Relay Module
     category: Module
-    manufacturer: Générique
+    manufacturer: Generic
     part_number: SRD-05VDC-SL-C
     package: Module
     value: 5 V, 10 A
-    description: Relais 10 A commandé par une sortie logique.
-    dimensions: environ 50 × 26 mm
+    description: 10 A relay controlled by a logic output.
+    dimensions: approximately 50 × 26 mm
     links:
       - https://www.circuitbasics.com/wp-content/uploads/2015/11/SRD-05VDC-SL-C-Datasheet.pdf
   - id: level-shifter-4ch
-    name: Convertisseur de niveaux logiques 4 voies
+    name: 4-Channel Logic Level Converter
     category: Module
-    manufacturer: Générique
+    manufacturer: Generic
     part_number: BSS138
     package: Module
-    value: 4 voies
-    description: Adapte des signaux 3,3 V et 5 V dans les deux sens (I²C compris).
+    value: 4 channels
+    description: Bidirectional 3.3 V and 5 V signal level converter, including I²C support.
     links:
       - https://www.onsemi.com/pdf/datasheet/bss138-d.pdf
 
-  # ---------- Alimentation ----------
+  # ---------- Power Supply ----------
   - id: tp4056-charger
-    name: Chargeur Li-ion TP4056
-    category: Alimentation
-    manufacturer: Générique
+    name: TP4056 Li-ion Charger
+    category: Power Supply
+    manufacturer: Generic
     part_number: TP4056 + DW01A
     package: Module
     value: 1 A
-    description: Charge d'une cellule Li-ion jusqu'à 1 A, avec protection.
-    dimensions: environ 26 × 17 mm
+    description: Charges a single Li-ion cell at up to 1 A, with protection.
+    dimensions: approximately 26 × 17 mm
     links:
       - https://dlnmh9ip6v2uc.cloudfront.net/datasheets/Prototyping/TP4056.pdf
   - id: lm2596-buck
-    name: Convertisseur abaisseur LM2596
-    category: Alimentation
-    manufacturer: Générique
+    name: LM2596 Step-Down Converter
+    category: Power Supply
+    manufacturer: Generic
     part_number: LM2596S
     package: Module
     value: 3 A
-    description: Abaisse 4,5 à 40 V vers une tension réglable, 3 A au plus.
-    dimensions: environ 43 × 21 mm
+    description: Steps down 4.5 to 40 V to an adjustable voltage, up to 3 A.
+    dimensions: approximately 43 × 21 mm
     links:
       - https://www.ti.com/lit/ds/symlink/lm2596.pdf
   - id: l7805
-    name: Régulateur L7805
-    category: Alimentation
+    name: L7805 Voltage Regulator
+    category: Power Supply
     manufacturer: STMicroelectronics
     part_number: L7805CV
     package: TO-220
     value: 5 V
-    description: Régulateur linéaire 5 V, 1,5 A, en TO-220.
+    description: 5 V linear voltage regulator, 1.5 A, in a TO-220 package.
     links:
       - https://www.st.com/resource/en/datasheet/l78.pdf
   - id: ams1117-3v3
-    name: Régulateur AMS1117-3.3
-    category: Alimentation
+    name: AMS1117-3.3 Voltage Regulator
+    category: Power Supply
     manufacturer: Advanced Monolithic Systems
     part_number: AMS1117-3.3
     package: SOT-223
     value: 3,3 V
-    description: Régulateur 3,3 V, 1 A, à faible chute, en SOT-223.
+    description: Low-dropout 3.3 V, 1 A regulator in a SOT-223 package.
     links:
       - http://www.advanced-monolithic.com/pdf/ds1117.pdf
   - id: lm317
-    name: Régulateur ajustable LM317
-    category: Alimentation
+    name: Adjustable LM317 Voltage Regulator
+    category: Power Supply
     manufacturer: Texas Instruments
     part_number: LM317
     package: TO-220
-    value: 1,25 à 37 V
-    description: Régulateur linéaire réglable de 1,25 à 37 V, en TO-220.
+    value: 1.25 to 37 V
+    description: Adjustable linear voltage regulator from 1.25 to 37 V, in a TO-220 package.
     links:
       - https://www.ti.com/lit/ds/symlink/lm317.pdf
 
-  # ---------- Moteurs ----------
+  # ---------- Motors ----------
   - id: l298n-driver
-    name: Pilote de moteurs L298N
-    category: Moteur
-    manufacturer: Générique
+    name: L298N Motor Driver
+    category: Motor
+    manufacturer: Generic
     part_number: L298N
     package: Module
     value: 2 A
-    description: Double pont en H, 2 A par voie.
-    dimensions: environ 43 × 43 mm
+    description: Dual H-bridge motor driver, 2 A per channel.
+    dimensions: approximately 43 × 43 mm
     links:
       - https://www.st.com/resource/en/datasheet/l298.pdf
   - id: a4988-driver
-    name: Pilote pas à pas A4988
-    category: Moteur
+    name: A4988 Stepper Motor Driver
+    category: Motor
     manufacturer: Allegro MicroSystems
     part_number: A4988
     package: Module
-    description: Pilote de moteur pas à pas bipolaire, jusqu'au seizième de pas.
+    description: Bipolar stepper motor driver with up to 1/16-step resolution.
     dimensions: 15,2 × 20,3 mm
     links:
       - https://www.allegromicro.com/-/media/files/datasheets/a4988-datasheet.pdf
   - id: drv8825-driver
-    name: Pilote pas à pas DRV8825
-    category: Moteur
+    name: DRV8825 Stepper Motor Driver
+    category: Motor
     manufacturer: Texas Instruments
     part_number: DRV8825
     package: Module
-    description: Pilote de moteur pas à pas bipolaire, jusqu'au trente-deuxième de pas.
+    description: Bipolar stepper motor driver with up to 1/32-step resolution.
     dimensions: 15,2 × 20,3 mm
     links:
       - https://www.ti.com/lit/ds/symlink/drv8825.pdf
   - id: uln2003-28byj48
-    name: Moteur 28BYJ-48 et carte ULN2003
-    category: Moteur
-    manufacturer: Générique
+    name: 28BYJ-48 Motor and ULN2003 Board
+    category: Motor
+    manufacturer: Generic
     part_number: 28BYJ-48 + ULN2003
-    package: Moteur et carte
+    package: Motor and board
     value: 5 V
-    description: Petit moteur pas à pas 5 V avec sa carte de commande.
+    description: Small 5 V stepper motor with its driver board.
     links:
       - https://www.ti.com/lit/ds/symlink/uln2003a.pdf
   - id: sg90-servo
-    name: Servomoteur SG90
-    category: Moteur
+    name: SG90 Servo Motor
+    category: Motor
     manufacturer: TowerPro
     part_number: SG90
-    description: Micro-servo 180°, commandé en PWM.
+    description: 180° micro servo controlled by PWM.
     dimensions: 22,2 × 11,8 mm
     links:
       - https://www.friendlywire.com/projects/ne555-servo-safe/SG90-datasheet.pdf
 
-  # ---------- Circuits intégrés ----------
+  # ---------- Integrated Circuits ----------
   - id: atmega328p
     name: ATmega328P (DIP-28)
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: Microchip
     part_number: ATmega328P-PU
     package: DIP-28
-    description: Le microcontrôleur de l'Arduino Uno.
+    description: The microcontroller used in the Arduino Uno.
     links:
       - https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-7810-Automotive-Microcontrollers-ATmega328P_Datasheet.pdf
   - id: attiny85
     name: ATtiny85 (DIP-8)
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: Microchip
     part_number: ATtiny85-20PU
     package: DIP-8
-    description: Microcontrôleur AVR à 8 broches.
+    description: 8-pin AVR microcontroller.
     links:
       - https://ww1.microchip.com/downloads/en/DeviceDoc/Atmel-2586-AVR-8-bit-Microcontroller-ATtiny25-ATtiny45-ATtiny85_Datasheet.pdf
   - id: 74hc595
     name: 74HC595
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: Texas Instruments
     part_number: SN74HC595N
     package: DIP-16
-    description: Registre à décalage 8 bits, en DIP-16.
+    description: 8-bit shift register in a DIP-16 package.
     links:
       - https://www.ti.com/lit/ds/symlink/sn74hc595.pdf
   - id: lm358
     name: LM358
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: Texas Instruments
     part_number: LM358P
     package: DIP-8
-    description: Double amplificateur opérationnel, en DIP-8.
+    description: Dual operational amplifier in a DIP-8 package.
     links:
       - https://www.ti.com/lit/ds/symlink/lm358.pdf
   - id: lm393
     name: LM393
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: Texas Instruments
     part_number: LM393P
     package: DIP-8
-    description: Double comparateur, en DIP-8.
+    description: Dual comparator in a DIP-8 package.
     links:
       - https://www.ti.com/lit/ds/symlink/lm393.pdf
   - id: uln2803a
     name: ULN2803A
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: STMicroelectronics
     part_number: ULN2803A
     package: DIP-18
-    description: Huit transistors Darlington pour relais et moteurs, en DIP-18.
+    description: Eight Darlington transistors for relays and motors, in a DIP-18 package.
     links:
       - https://www.st.com/resource/en/datasheet/uln2801a.pdf
       - https://www.ti.com/lit/ds/symlink/uln2803c.pdf
   - id: pc817
     name: PC817
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: Sharp
     part_number: PC817
     package: DIP-4
-    description: Optocoupleur, en DIP-4.
+    description: Optocoupler in a DIP-4 package.
     links:
       - https://www.farnell.com/datasheets/73758.pdf
   - id: cd4051b
     name: CD4051B
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: Texas Instruments
     part_number: CD4051BE
     package: DIP-16
-    description: Multiplexeur analogique 8 voies, en DIP-16.
+    description: 8-channel analog multiplexer in a DIP-16 package.
     links:
       - https://www.ti.com/lit/ds/symlink/cd4051b.pdf
   - id: ne555
     name: NE555
-    category: Circuit intégré
+    category: Integrated Circuit
     manufacturer: Texas Instruments
     part_number: NE555P
     package: DIP-8
-    description: Temporisateur pour oscillateurs et monostables.
+    description: Timer for oscillators and monostable circuits.
     links:
       - https://www.ti.com/lit/ds/symlink/ne555.pdf
 
@@ -595,7 +595,7 @@ devices:
     manufacturer: onsemi
     part_number: BC547B
     package: TO-92
-    description: Transistor NPN petit signal, en TO-92.
+    description: Small-signal NPN transistor in a TO-92 package.
     links:
       - https://www.onsemi.com/pdf/datasheet/bc546-d.pdf
   - id: 2n3904
@@ -604,7 +604,7 @@ devices:
     manufacturer: onsemi
     part_number: 2N3904
     package: TO-92
-    description: Transistor NPN d'usage général, en TO-92.
+    description: General-purpose NPN transistor in a TO-92 package.
     links:
       - https://www.onsemi.com/pdf/datasheet/2n3903-d.pdf
   - id: 2n7000
@@ -613,7 +613,7 @@ devices:
     manufacturer: onsemi
     part_number: 2N7000
     package: TO-92
-    description: MOSFET canal N petit signal, en TO-92.
+    description: Small-signal N-channel MOSFET in a TO-92 package.
     links:
       - https://www.onsemi.com/pdf/datasheet/nds7002a-d.pdf
   - id: irlz44n
@@ -622,7 +622,7 @@ devices:
     manufacturer: Infineon
     part_number: IRLZ44NPBF
     package: TO-220
-    description: MOSFET canal N à commande logique, en TO-220.
+    description: Logic-level N-channel MOSFET in a TO-220 package.
     links:
       - https://www.infineon.com/dgdl/irlz44npbf.pdf?fileId=5546d462533600a40153567217c32725
   - id: tip120
@@ -631,7 +631,7 @@ devices:
     manufacturer: onsemi
     part_number: TIP120
     package: TO-220
-    description: Darlington NPN de puissance, en TO-220.
+    description: Power NPN Darlington transistor in a TO-220 package.
     links:
       - https://www.onsemi.com/pdf/datasheet/tip120-d.pdf
   - id: pn2222a
@@ -640,7 +640,7 @@ devices:
     manufacturer: onsemi
     part_number: PN2222A
     package: TO-92
-    description: Transistor NPN de commutation, jusqu'à 600 mA.
+    description: Switching NPN transistor, rated up to 600 mA.
     links:
       - https://www.onsemi.com/pdf/datasheet/pn2222a-d.pdf
 
@@ -652,7 +652,7 @@ devices:
     part_number: 1N4007
     package: DO-41
     value: 1 A, 1000 V
-    description: Diode de redressement 1 A, 1000 V.
+    description: 1 A, 1000 V rectifier diode.
     links:
       - https://www.vishay.com/docs/88503/1n4001.pdf
   - id: 1n4148
@@ -661,7 +661,7 @@ devices:
     manufacturer: Vishay
     part_number: 1N4148
     package: DO-35
-    description: Diode de signal rapide.
+    description: Fast switching signal diode.
     links:
       - https://www.vishay.com/docs/81857/1n4148.pdf
   - id: 1n5819
@@ -671,145 +671,145 @@ devices:
     part_number: 1N5819
     package: DO-41
     value: 1 A, 40 V
-    description: Diode Schottky 1 A, 40 V.
+    description: 1 A, 40 V Schottky diode.
     links:
       - https://www.vishay.com/docs/88525/1n5817.pdf
   - id: zener-diode
-    name: Diode Zener 0,5 W
+    name: 0.5 W Zener Diode
     category: Diode
     package: DO-35
     values: ["3,3 V", "4,7 V", "5,1 V", "9,1 V", 12 V]
-    description: Référence de tension simple.
+    description: Simple voltage reference.
 
-  # ---------- Résistances ----------
+  # ---------- Resistors ----------
   - id: resistor-1-4w
-    name: Résistance 1/4 W
-    category: Résistance
+    name: Resistor 1/4 W
+    category: Resistor
     package: THT 1/4 W
     values: [10 Ω, 22 Ω, 47 Ω, 100 Ω, 220 Ω, 330 Ω, 470 Ω, 1 kΩ, "2,2 kΩ", "4,7 kΩ", 10 kΩ, 22 kΩ, 47 kΩ, 100 kΩ, 220 kΩ, 470 kΩ, 1 MΩ]
-    description: Résistance à couche métallique 1 %, à piquer sur plaque d'essai.
+    description: 1% metal-film resistor for through-hole breadboard use.
   - id: resistor-0805
-    name: Résistance CMS 0805
-    category: Résistance
+    name: 0805 SMD Resistor
+    category: Resistor
     package: 0805
     values: [10 Ω, 22 Ω, 47 Ω, 100 Ω, 220 Ω, 330 Ω, 470 Ω, 1 kΩ, "2,2 kΩ", "4,7 kΩ", 10 kΩ, 22 kΩ, 47 kΩ, 100 kΩ, 220 kΩ, 470 kΩ, 1 MΩ]
-    description: Résistance à souder en surface.
+    description: Surface-mount resistor.
   - id: potentiometer
-    name: Potentiomètre
-    category: Résistance
-    package: Rotatif, 3 broches
+    name: Potentiometer
+    category: Resistor
+    package: Rotary, 3-pin
     values: [1 kΩ, 10 kΩ, 50 kΩ, 100 kΩ]
-    description: Résistance réglable à axe, pour consignes et réglages.
+    description: Adjustable shaft resistor for controls and tuning.
   - id: trimmer-3296
-    name: Résistance ajustable multitours
-    category: Résistance
+    name: Multiturn Trimmer Resistor
+    category: Resistor
     package: 3296W
     values: [1 kΩ, 10 kΩ, 100 kΩ]
-    description: Réglage fin d'un circuit, au tournevis.
+    description: Fine circuit adjustment with a screwdriver.
 
-  # ---------- Condensateurs ----------
+  # ---------- Capacitors ----------
   - id: capacitor-ceramic
-    name: Condensateur céramique
-    category: Condensateur
-    package: THT, pas 2,54 mm
+    name: Ceramic Capacitor
+    category: Capacitor
+    package: THT, 2.54 mm pitch
     values: [10 pF, 22 pF, 100 pF, 1 nF, 10 nF, 100 nF, 1 µF]
-    description: Découplage et filtrage ; 100 nF au plus près de chaque circuit intégré.
+    description: Decoupling and filtering; place 100 nF as close as possible to each integrated circuit.
   - id: capacitor-electrolytic
-    name: Condensateur électrolytique
-    category: Condensateur
+    name: Electrolytic Capacitor
+    category: Capacitor
     package: Radial
     values: [1 µF, 10 µF, 47 µF, 100 µF, 220 µF, 470 µF, 1000 µF]
-    description: Filtrage d'alimentation ; respecter la polarité.
+    description: Power supply filtering; observe polarity.
 
-  # ---------- LED ----------
+  # ---------- LEDs ----------
   - id: led-5mm
     name: LED 5 mm
     category: LED
     package: 5 mm
-    values: [rouge, verte, jaune, bleue, blanche]
-    description: Témoin lumineux, toujours avec une résistance en série.
+    values: [red, green, yellow, blue, white]
+    description: Indicator LED; always use a resistor in series.
   - id: led-3mm
     name: LED 3 mm
     category: LED
     package: 3 mm
-    values: [rouge, verte, jaune, bleue, blanche]
-    description: Témoin lumineux, toujours avec une résistance en série.
+    values: [red, green, yellow, blue, white]
+    description: Indicator LED; always use a resistor in series.
   - id: led-rgb-5mm
     name: LED RVB 5 mm
     category: LED
-    package: 5 mm, 4 broches
-    values: [cathode commune, anode commune]
-    description: Trois LED dans un boîtier, une résistance par couleur.
+    package: 5 mm, 4-pin
+    values: [common cathode, common anode]
+    description: Three LEDs in one package, with one resistor per color.
 
-  # ---------- Connectique ----------
+  # ---------- Connectors ----------
   - id: pin-header-male
-    name: Barrette mâle 2,54 mm
-    category: Connectique
-    package: Sécable
+    name: 2.54 mm Male Header
+    category: Connector
+    package: Breakaway
     values: [1 × 40, 2 × 40]
-    description: Broches à souder sur les modules.
+    description: Pins to solder onto modules.
   - id: pin-header-female
-    name: Barrette femelle 2,54 mm
-    category: Connectique
-    package: Sécable
+    name: 2.54 mm Female Header
+    category: Connector
+    package: Breakaway
     values: [1 × 40, 1 × 20, 1 × 8]
-    description: Supports pour enficher des modules.
+    description: Sockets for plugging in modules.
   - id: dupont-wires
-    name: Fils Dupont
-    category: Connectique
+    name: Dupont Wires
+    category: Connector
     package: 20 cm
-    values: [mâle-mâle, mâle-femelle, femelle-femelle]
-    description: Fils de liaison pour plaque d'essai et modules.
+    values: [male-male, male-female, female-female]
+    description: Jumper wires for breadboards and modules.
   - id: screw-terminal
-    name: Bornier à vis
-    category: Connectique
-    package: Pas 5,08 mm
-    values: [2 points, 3 points]
-    description: Raccordement de fils d'alimentation ou de charge.
+    name: Screw Terminal
+    category: Connector
+    package: 5.08 mm pitch
+    values: [2 positions, 3 positions]
+    description: Connection for power or load wires.
 
-  # ---------- Prototypage ----------
+  # ---------- Prototyping ----------
   - id: breadboard-830
-    name: Plaque d'essai 830 points
-    category: Prototypage
-    description: Montages sans soudure.
+    name: 830-Point Breadboard
+    category: Prototyping
+    description: Solderless prototyping.
     dimensions: 165 × 55 mm
   - id: breadboard-400
-    name: Plaque d'essai 400 points
-    category: Prototypage
-    description: Montages sans soudure, demi-format.
+    name: 400-Point Breadboard
+    category: Prototyping
+    description: Solderless prototyping, half-size.
     dimensions: 83 × 55 mm
   - id: perfboard
-    name: Plaque à pastilles
-    category: Prototypage
+    name: Perfboard
+    category: Prototyping
     values: [5 × 7 cm, 7 × 9 cm]
-    description: Circuit imprimé perforé, à souder.
+    description: Perforated circuit board for soldered construction.
 
-  # ---------- Interrupteurs ----------
+  # ---------- Switches ----------
   - id: push-button-6x6
-    name: Bouton poussoir 6 × 6 mm
-    category: Interrupteur
-    package: THT, 4 broches
-    description: Contact momentané pour plaque d'essai.
+    name: 6 × 6 mm Push Button
+    category: Switch
+    package: THT, 4-pin
+    description: Momentary contact for breadboard use.
   - id: slide-switch
-    name: Interrupteur à glissière
-    category: Interrupteur
-    package: SS12D00, 3 broches
-    description: Marche-arrêt d'un petit montage.
+    name: Slide Switch
+    category: Switch
+    package: SS12D00, 3-pin
+    description: On/off switch for a small circuit.
 
-  # ---------- Divers ----------
+  # ---------- Miscellaneous ----------
   - id: buzzer-active
-    name: Buzzer actif 5 V
-    category: Divers
+    name: 5 V Active Buzzer
+    category: Miscellaneous
     package: 12 mm
-    description: Sonne dès qu'il est alimenté.
+    description: Sounds continuously when powered.
   - id: buzzer-passive
-    name: Buzzer passif
-    category: Divers
+    name: Passive Buzzer
+    category: Miscellaneous
     package: 12 mm
-    description: Joue une note pilotée par un signal carré (tone()).
+    description: Produces tones from a square-wave signal (tone()).
   - id: crystal-16mhz
-    name: Quartz 16 MHz
-    category: Divers
+    name: 16 MHz Crystal
+    category: Miscellaneous
     package: HC-49S
     value: 16 MHz
-    description: Horloge d'un microcontrôleur AVR, avec deux condensateurs de 22 pF.
+    description: Clock source for an AVR microcontroller, with two 22 pF capacitors.
